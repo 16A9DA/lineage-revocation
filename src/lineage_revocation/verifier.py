@@ -29,6 +29,14 @@ class RevocationBindingMismatch(AuthorizationError):
         self.node_id = node_id
 
 
+class ReauthRequired(AuthorizationError):
+    def __init__(self, last_authorized_at: int, now: int, session_reauth_interval: int):
+        super().__init__(f"session last authorized at {last_authorized_at}, now {now} exceeds reauth interval {session_reauth_interval}")
+        self.last_authorized_at = last_authorized_at
+        self.now = now
+        self.session_reauth_interval = session_reauth_interval
+
+
 def _check_revocation_binding(lineage: list[Node], root: Node) -> None:
     for node in lineage:
         if (
@@ -38,7 +46,15 @@ def _check_revocation_binding(lineage: list[Node], root: Node) -> None:
             raise RevocationBindingMismatch(node.node_id)
 
 
-def authorize(lineage: list[Node], root_trust_anchor: COSEKey, *, audience: str, now: int) -> list[bytes]:
+def authorize(
+    lineage: list[Node],
+    root_trust_anchor: COSEKey,
+    *,
+    audience: str,
+    now: int,
+    last_authorized_at: int | None = None,
+    session_reauth_interval: int | None = None,
+) -> list[bytes]:
     authenticated_ids = verify_lineage(lineage, root_trust_anchor)
 
     root = lineage[0]
@@ -49,5 +65,9 @@ def authorize(lineage: list[Node], root_trust_anchor: COSEKey, *, audience: str,
         raise AudienceMismatch(leaf.body.audience, audience)
     if now >= leaf.body.expires_at:
         raise CredentialExpired(leaf.body.expires_at, now)
+
+    if last_authorized_at is not None and session_reauth_interval is not None:
+        if now - last_authorized_at >= session_reauth_interval:
+            raise ReauthRequired(last_authorized_at, now, session_reauth_interval)
 
     return authenticated_ids
