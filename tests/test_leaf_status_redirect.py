@@ -5,7 +5,7 @@ import pytest
 
 from lineage_revocation.keys import generate_keypair
 from lineage_revocation.nodes import create_child_node, create_root_node
-from lineage_revocation.verifier import AudienceMismatch, CredentialExpired, RevocationBindingMismatch, authorize
+from lineage_revocation.verifier import AudienceMismatch, CredentialExpired, ReauthRequired, RevocationBindingMismatch, authorize
 
 REAL_URI = "https://status.example/v1"
 ATTACKER_URI = "https://attacker.example/status"
@@ -81,3 +81,21 @@ def test_expired_leaf_denied():
     ch = _chain()
     with pytest.raises(CredentialExpired):
         authorize([ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="agent", now=1_700_999_999)
+
+
+def test_stale_session_requires_reauth():
+    ch = _chain()
+    with pytest.raises(ReauthRequired):
+        authorize(
+            [ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="agent", now=NOW,
+            last_authorized_at=NOW - 100, session_reauth_interval=50,
+        )
+
+
+def test_fresh_session_does_not_require_reauth():
+    ch = _chain()
+    result = authorize(
+        [ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="agent", now=NOW,
+        last_authorized_at=NOW - 10, session_reauth_interval=50,
+    )
+    assert result[-1] == ch["c"].node_id
