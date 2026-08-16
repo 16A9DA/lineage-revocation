@@ -3,6 +3,7 @@ from __future__ import annotations
 from .lineage import verify_lineage
 from .nodes import Node
 from .keys import COSEKey
+from .revocation import RevocationStatement, is_target_revoked
 
 
 class AuthorizationError(Exception):
@@ -29,6 +30,12 @@ class RevocationBindingMismatch(AuthorizationError):
         self.node_id = node_id
 
 
+class NodeRevoked(AuthorizationError):
+    def __init__(self, node_id: bytes):
+        super().__init__(f"node {node_id!r} is revoked")
+        self.node_id = node_id
+
+
 class ReauthRequired(AuthorizationError):
     def __init__(self, last_authorized_at: int, now: int, session_reauth_interval: int):
         super().__init__(f"session last authorized at {last_authorized_at}, now {now} exceeds reauth interval {session_reauth_interval}")
@@ -52,6 +59,7 @@ def authorize(
     *,
     audience: str,
     now: int,
+    revocation_statements: list[RevocationStatement] | None = None,
     last_authorized_at: int | None = None,
     session_reauth_interval: int | None = None,
 ) -> list[bytes]:
@@ -59,6 +67,11 @@ def authorize(
 
     root = lineage[0]
     _check_revocation_binding(lineage, root)
+
+    if revocation_statements is not None:
+        for node_id in authenticated_ids:
+            if is_target_revoked(node_id, revocation_statements, root_trust_anchor, now=now):
+                raise NodeRevoked(node_id)
 
     leaf = lineage[-1]
     if leaf.body.audience != audience:
