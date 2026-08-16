@@ -93,20 +93,27 @@ class Node:
         return cls(body=body, node_id=compute_node_id(body), signature=signature)
 
 
+def sign_payload(payload: bytes, signer_private_key: Ed25519PrivateKey) -> bytes:
+    return signer_private_key.sign(_sig_structure(_protected_header_bytes(), payload))
+
+
+def verify_payload(payload: bytes, signature: bytes, verifier_public_key: COSEKey) -> bool:
+    try:
+        verifier_public_key.to_cryptography_key().verify(
+            signature, _sig_structure(_protected_header_bytes(), payload)
+        )
+        return True
+    except InvalidSignature:
+        return False
+
+
 def sign_node(body: NodeBody, signer_private_key: Ed25519PrivateKey) -> Node:
-    payload = body.canonical_bytes()
-    to_sign = _sig_structure(_protected_header_bytes(), payload)
-    signature = signer_private_key.sign(to_sign)
+    signature = sign_payload(body.canonical_bytes(), signer_private_key)
     return Node(body=body, node_id=compute_node_id(body), signature=signature)
 
 
 def verify_node_signature(node: Node, verifier_public_key: COSEKey) -> bool:
-    to_verify = _sig_structure(_protected_header_bytes(), node.body.canonical_bytes())
-    try:
-        verifier_public_key.to_cryptography_key().verify(node.signature, to_verify)
-        return True
-    except InvalidSignature:
-        return False
+    return verify_payload(node.body.canonical_bytes(), node.signature, verifier_public_key)
 
 
 def create_root_node(
