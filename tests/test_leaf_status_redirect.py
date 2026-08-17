@@ -6,6 +6,7 @@ import pytest
 from lineage_revocation.keys import generate_keypair
 from lineage_revocation.nodes import create_child_node, create_root_node
 from lineage_revocation.revocation import create_revocation_statement
+from lineage_revocation.status import StaleStatusArtifact, StatusArtifact
 from lineage_revocation.verifier import AudienceMismatch, CredentialExpired, NodeRevoked, ReauthRequired, RevocationBindingMismatch, authorize
 
 REAL_URI = "https://status.example/v1"
@@ -93,19 +94,87 @@ def test_stale_session_requires_reauth():
         )
 
 
-def test_revoked_intermediary_denies_whole_subtree():
-    ch = _chain()
-    statement = create_revocation_statement(
+def _revocation_statement(ch, *, effective_at=NOW - 1):
+    return create_revocation_statement(
         ch["root_priv"], revocation_id=b"\x01" * 4, target_node=ch["b"],
         target_lineage=[ch["root"], ch["a"], ch["b"]], revoker_node_id=ch["root"].node_id,
-        revoker_scope_proof=b"", effective_at=NOW - 1, issued_at=1_700_000_000, reason_code="compromise",
+        revoker_scope_proof=b"", effective_at=effective_at, issued_at=1_700_000_000, reason_code="compromise",
+    )
+
+
+def test_revoked_intermediary_denies_whole_subtree(tmp_path):
+    ch = _chain()
+    artifact = StatusArtifact(
+        version=1, root_revocation_state_uri=REAL_URI, issued_at=NOW - 100, valid_until=NOW + 1000,
+        statements=[_revocation_statement(ch)],
     )
     with pytest.raises(NodeRevoked) as exc_info:
         authorize(
             [ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="agent", now=NOW,
-            revocation_statements=[statement],
+            status_artifact=artifact, status_store_path=tmp_path / "hwm.json", max_staleness=10_000,
         )
     assert exc_info.value.node_id == ch["b"].node_id
+
+
+def test_status_artifact_cannot_be_bypassed_with_wrong_uri(tmp_path):
+    ch = _chain()
+    artifact = StatusArtifact(
+        version=1, root_revocation_state_uri=ATTACKER_URI, issued_at=NOW - 100, valid_until=NOW + 1000,
+        statements=[_revocation_statement(ch)],
+    )
+    with pytest.raises(RevocationBindingMismatch):
+        authorize(
+            [ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="agent", now=NOW,
+            status_artifact=artifact, status_store_path=tmp_path / "hwm.json", max_staleness=10_000,
+        )
+
+
+def test_status_artifact_rollback_denied(tmp_path):
+    ch = _chain()
+    store = tmp_path / "hwm.json"
+    newer = StatusArtifact(version=2, root_revocation_state_uri=REAL_URI, issued_at=NOW - 100, valid_until=NOW + 1000, statements=[])
+    older = StatusArtifact(version=1, root_revocation_state_uri=REAL_URI, issued_at=NOW - 100, valid_until=NOW + 1000, statements=[])
+
+    authorize(
+        [ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="agent", now=NOW,
+        status_artifact=newer, status_store_path=store, max_staleness=10_000,
+    )
+    with pytest.raises(StaleStatusArtifact):
+        authorize(
+            [ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="agent", now=NOW,
+            status_artifact=older, status_store_path=store, max_staleness=10_000,
+        )
+
+
+def test_status_artifact_rollback_persists_across_restart(tmp_path):
+    ch = _chain()
+    store = tmp_path / "hwm.json"
+    accepted = StatusArtifact(version=5, root_revocation_state_uri=REAL_URI, issued_at=NOW - 100, valid_until=NOW + 1000, statements=[])
+    authorize(
+        [ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="agent", now=NOW,
+        status_artifact=accepted, status_store_path=store, max_staleness=10_000,
+    )
+
+    # simulated restart: fresh call, no shared in-process state, only the durable store file.
+    replayed = StatusArtifact(version=3, root_revocation_state_uri=REAL_URI, issued_at=NOW - 100, valid_until=NOW + 1000, statements=[])
+    with pytest.raises(StaleStatusArtifact):
+        authorize(
+            [ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="agent", now=NOW,
+            status_artifact=replayed, status_store_path=store, max_staleness=10_000,
+        )
+
+
+def test_stale_status_artifact_denied(tmp_path):
+    ch = _chain()
+    artifact = StatusArtifact(
+        version=1, root_revocation_state_uri=REAL_URI, issued_at=NOW - 10_000, valid_until=NOW + 1000,
+        statements=[],
+    )
+    with pytest.raises(StaleStatusArtifact):
+        authorize(
+            [ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="agent", now=NOW,
+            status_artifact=artifact, status_store_path=tmp_path / "hwm.json", max_staleness=100,
+        )
 
 
 def test_fresh_session_does_not_require_reauth():
