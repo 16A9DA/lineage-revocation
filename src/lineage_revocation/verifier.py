@@ -39,6 +39,12 @@ class NodeRevoked(AuthorizationError):
         self.node_id = node_id
 
 
+class AuthorityAmplification(AuthorizationError):
+    def __init__(self, node_id: bytes):
+        super().__init__(f"node {node_id!r} authority is not attenuated relative to its parent (DR-0001)")
+        self.node_id = node_id
+
+
 class ReauthRequired(AuthorizationError):
     def __init__(self, last_authorized_at: int, now: int, session_reauth_interval: int):
         super().__init__(f"session last authorized at {last_authorized_at}, now {now} exceeds reauth interval {session_reauth_interval}")
@@ -54,6 +60,19 @@ def _check_revocation_binding(lineage: list[Node], root: Node) -> None:
             or node.body.revocation_trust_anchor != root.body.revocation_trust_anchor
         ):
             raise RevocationBindingMismatch(node.node_id)
+
+
+def _attenuated(parent: Node, child: Node) -> bool:
+    # DR-0001: parent.can_delegate AND child.authority subset-or-equal parent.authority.
+    return parent.body.can_delegate and child.body.authority <= parent.body.authority
+
+
+def _check_attenuation(lineage: list[Node]) -> None:
+    parent = lineage[0]
+    for child in lineage[1:]:
+        if not _attenuated(parent, child):
+            raise AuthorityAmplification(child.node_id)
+        parent = child
 
 
 def authorize(
@@ -72,6 +91,7 @@ def authorize(
 
     root = lineage[0]
     _check_revocation_binding(lineage, root)
+    _check_attenuation(lineage)
 
     if status_artifact is not None:
         if status_artifact.root_revocation_state_uri != root.body.root_revocation_state_uri:
