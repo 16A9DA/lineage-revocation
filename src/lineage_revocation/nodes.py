@@ -20,8 +20,8 @@ class NodeBody:
     subject: COSEKey  # delegatee's COSE public key
     parent_node_id: bytes | None  # None only for the root node
     audience: str
-    authority: str
-    delegation_rights: list[str]
+    authority: frozenset[str]  # opaque capability strings, equality-only (DR-0001)
+    can_delegate: bool
     root_revocation_state_uri: str
     revocation_trust_anchor: bytes
     issued_at: int
@@ -34,8 +34,8 @@ class NodeBody:
             "subject": self.subject.to_cbor_dict(),
             "parent_node_id": self.parent_node_id,
             "audience": self.audience,
-            "authority": self.authority,
-            "delegation_rights": self.delegation_rights,
+            "authority": sorted(self.authority),  # sorted for deterministic canonical CBOR
+            "can_delegate": self.can_delegate,
             "root_revocation_state_uri": self.root_revocation_state_uri,
             "revocation_trust_anchor": self.revocation_trust_anchor,
             "issued_at": self.issued_at,
@@ -50,8 +50,8 @@ class NodeBody:
             subject=COSEKey.from_cbor_dict(d["subject"]),
             parent_node_id=d["parent_node_id"],
             audience=d["audience"],
-            authority=d["authority"],
-            delegation_rights=list(d["delegation_rights"]),
+            authority=frozenset(d["authority"]),
+            can_delegate=d["can_delegate"],
             root_revocation_state_uri=d["root_revocation_state_uri"],
             revocation_trust_anchor=d["revocation_trust_anchor"],
             issued_at=d["issued_at"],
@@ -122,8 +122,8 @@ def create_root_node(
     *,
     issuer: str,
     audience: str,
-    authority: str,
-    delegation_rights: list[str],
+    authority: frozenset[str],
+    can_delegate: bool,
     root_revocation_state_uri: str,
     revocation_trust_anchor: bytes,
     issued_at: int,
@@ -137,7 +137,7 @@ def create_root_node(
         parent_node_id=None,
         audience=audience,
         authority=authority,
-        delegation_rights=delegation_rights,
+        can_delegate=can_delegate,
         root_revocation_state_uri=root_revocation_state_uri,
         revocation_trust_anchor=revocation_trust_anchor,
         issued_at=issued_at,
@@ -153,8 +153,8 @@ def create_child_node(
     *,
     issuer: str,
     audience: str,
-    authority: str,
-    delegation_rights: list[str],
+    authority: frozenset[str],
+    can_delegate: bool,
     root_revocation_state_uri: str,
     revocation_trust_anchor: bytes,
     issued_at: int,
@@ -168,7 +168,7 @@ def create_child_node(
         parent_node_id=parent_node_id,
         audience=audience,
         authority=authority,
-        delegation_rights=delegation_rights,
+        can_delegate=can_delegate,
         root_revocation_state_uri=root_revocation_state_uri,
         revocation_trust_anchor=revocation_trust_anchor,
         issued_at=issued_at,
