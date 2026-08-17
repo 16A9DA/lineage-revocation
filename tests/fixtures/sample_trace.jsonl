@@ -1,0 +1,10 @@
+{"event": "task_start", "task_id": "t1", "timestamp": 0}
+{"event": "delegation", "task_id": "t1", "parent_agent_id": "root", "agent_id": "a", "timestamp": 1}
+{"event": "delegation", "task_id": "t1", "parent_agent_id": "a", "agent_id": "b", "timestamp": 5}
+{"event": "delegation", "task_id": "t1", "parent_agent_id": "a", "agent_id": "c", "timestamp": 6}
+{"event": "tool_call", "task_id": "t1", "agent_id": "root", "tool": "bash", "server": "local", "timestamp": 2}
+{"event": "tool_call", "task_id": "t1", "agent_id": "b", "tool": "read_file", "server": "local", "timestamp": 10}
+{"event": "task_end", "task_id": "t1", "timestamp": 50}
+{"event": "task_start", "task_id": "t2", "timestamp": 0}
+{"event": "delegation", "task_id": "t2", "parent_agent_id": "root2", "agent_id": "x", "timestamp": 1}
+{"event": "task_end", "task_id": "t2", "timestamp": 20}
