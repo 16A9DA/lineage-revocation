@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from .lineage import verify_lineage
 from .nodes import Node
 from .keys import COSEKey
-from .revocation import RevocationStatement, is_target_revoked
+from .revocation import is_target_revoked
+from .status import StatusArtifact, accept_status_artifact
 
 
 class AuthorizationError(Exception):
@@ -59,7 +62,9 @@ def authorize(
     *,
     audience: str,
     now: int,
-    revocation_statements: list[RevocationStatement] | None = None,
+    status_artifact: StatusArtifact | None = None,
+    status_store_path: Path | None = None,
+    max_staleness: int | None = None,
     last_authorized_at: int | None = None,
     session_reauth_interval: int | None = None,
 ) -> list[bytes]:
@@ -68,7 +73,12 @@ def authorize(
     root = lineage[0]
     _check_revocation_binding(lineage, root)
 
-    if revocation_statements is not None:
+    if status_artifact is not None:
+        if status_artifact.root_revocation_state_uri != root.body.root_revocation_state_uri:
+            raise RevocationBindingMismatch(root.node_id)
+        revocation_statements = accept_status_artifact(
+            status_artifact, status_store_path, now=now, max_staleness=max_staleness
+        )
         for node_id in authenticated_ids:
             if is_target_revoked(node_id, revocation_statements, root_trust_anchor, now=now):
                 raise NodeRevoked(node_id)
