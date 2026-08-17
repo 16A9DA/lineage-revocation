@@ -18,31 +18,31 @@ def _delegation_chain():
 
     root = create_root_node(
         root_priv, root_pub,
-        issuer="root", audience="agent", authority="full", delegation_rights=["*"],
+        issuer="root", audience="agent", authority=frozenset({"full"}), can_delegate=True,
         root_revocation_state_uri=REVOCATION_URI, revocation_trust_anchor=TRUST_ANCHOR,
         issued_at=1_700_000_000, expires_at=1_700_100_000,
     )
     a = create_child_node(
         root_priv, a_pub, root.node_id,
-        issuer="root", audience="agent", authority="full", delegation_rights=["*"],
+        issuer="root", audience="agent", authority=frozenset({"full"}), can_delegate=True,
         root_revocation_state_uri=REVOCATION_URI, revocation_trust_anchor=TRUST_ANCHOR,
         issued_at=1_700_000_000, expires_at=1_700_100_000,
     )
     b = create_child_node(
         a_priv, b_pub, a.node_id,
-        issuer="a", audience="agent", authority="full", delegation_rights=["*"],
+        issuer="a", audience="agent", authority=frozenset({"full"}), can_delegate=True,
         root_revocation_state_uri=REVOCATION_URI, revocation_trust_anchor=TRUST_ANCHOR,
         issued_at=1_700_000_000, expires_at=1_700_100_000,
     )
     c = create_child_node(
         b_priv, c_pub, b.node_id,
-        issuer="b", audience="agent", authority="full", delegation_rights=["*"],
+        issuer="b", audience="agent", authority=frozenset({"full"}), can_delegate=True,
         root_revocation_state_uri=REVOCATION_URI, revocation_trust_anchor=TRUST_ANCHOR,
         issued_at=1_700_000_000, expires_at=1_700_100_000,
     )
     d = create_child_node(  # a's other child, sibling of b
         a_priv, d_pub, a.node_id,
-        issuer="a", audience="agent", authority="full", delegation_rights=["*"],
+        issuer="a", audience="agent", authority=frozenset({"full"}), can_delegate=True,
         root_revocation_state_uri=REVOCATION_URI, revocation_trust_anchor=TRUST_ANCHOR,
         issued_at=1_700_000_000, expires_at=1_700_100_000,
     )
