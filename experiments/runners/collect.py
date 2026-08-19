@@ -137,6 +137,17 @@ def run_one(workload_id: str, topology: str, task: str, run_id: str, model) -> P
     return norm_path
 
 
+MAX_ATTEMPTS = 3
+
+
+def _record_failure(workload_id: str, index: int, task: str, attempts: list[dict]) -> None:
+    fail_dir = RAW_DIR / "failed"
+    fail_dir.mkdir(parents=True, exist_ok=True)
+    task_id = f"{workload_id}_{index:02d}_{int(time.time())}"
+    record = {"workload_id": workload_id, "index": index, "task": task, "status": "failed", "attempts": attempts}
+    (fail_dir / f"{task_id}.json").write_text(json.dumps(record, indent=2, default=str))
+
+
 def main() -> None:
     model = OpenAIServerModel(
         model_id="openai/gpt-oss-120b",
@@ -152,18 +163,35 @@ def main() -> None:
             if any(RAW_DIR.glob(f"{workload_id}_{i:02d}_*.json")):
                 skipped += 1
                 continue
-            run_id = f"{i:02d}_{int(time.time())}"
-            signal.alarm(150)
-            try:
-                run_one(workload_id, topology, task, run_id, model)
+            attempts: list[dict] = []
+            success = False
+            for attempt in range(1, MAX_ATTEMPTS + 1):
+                run_id = f"{i:02d}_{int(time.time())}"
+                signal.alarm(150)
+                try:
+                    run_one(workload_id, topology, task, run_id, model)
+                    success = True
+                    break
+                except Exception as exc:
+                    attempts.append(
+                        {"attempt": attempt, "run_id": run_id, "error_type": type(exc).__name__, "error": str(exc)}
+                    )
+                finally:
+                    signal.alarm(0)
+            if success:
                 ok += 1
-                print(f"[{ok + failed}] {workload_id} {run_id}: ok")
-            except Exception as exc:
+                suffix = f" (attempt {attempt})" if attempt > 1 else ""
+                print(f"[{ok + failed}] {workload_id} {run_id}: ok{suffix}")
+            else:
                 failed += 1
-                print(f"[{ok + failed}] {workload_id} {run_id}: FAILED ({type(exc).__name__})")
-            finally:
-                signal.alarm(0)
+                _record_failure(workload_id, i, task, attempts)
+                print(
+                    f"[{ok + failed}] {workload_id} {i:02d}: FAILED after {MAX_ATTEMPTS} attempts "
+                    f"({attempts[-1]['error_type']})"
+                )
     print(f"collected {ok} real traces, {failed} failed, {skipped} skipped (already present)")
+    if failed:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
