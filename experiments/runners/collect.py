@@ -26,9 +26,8 @@ NORM_DIR = ROOT / "experiments" / "traces" / "normalized"
 
 
 class TimedWebSearchTool(WebSearchTool):
-    # WebSearchTool.search_duckduckgo calls requests.get with no timeout;
-    # a stalled DuckDuckGo response hangs the run forever. Same request,
-    # bounded.
+    # WebSearchTool.search_duckduckgo/search_bing call requests.get with no
+    # timeout; a stalled response hangs the run forever. Same requests, bounded.
     def search_duckduckgo(self, query: str) -> list:
         response = requests.get(
             "https://lite.duckduckgo.com/lite/",
@@ -40,6 +39,26 @@ class TimedWebSearchTool(WebSearchTool):
         parser = self._create_duckduckgo_parser()
         parser.feed(response.text)
         return parser.results
+
+    def search_bing(self, query: str) -> list:
+        import xml.etree.ElementTree as ET
+
+        response = requests.get(
+            "https://www.bing.com/search",
+            params={"q": query, "format": "rss"},
+            timeout=15,
+        )
+        response.raise_for_status()
+        root = ET.fromstring(response.text)
+        items = root.findall(".//item")
+        return [
+            {
+                "title": item.findtext("title"),
+                "link": item.findtext("link"),
+                "description": item.findtext("description"),
+            }
+            for item in items[: self.max_results]
+        ]
 
 
 def _step_to_dict(step) -> dict:
@@ -62,14 +81,14 @@ def _build(topology: str, model) -> tuple[str, dict[str, MultiStepAgent]]:
     if topology == "solo":
         name = "solo_agent"
         agent = ToolCallingAgent(
-            tools=[TimedWebSearchTool()], model=model, name=name, max_steps=6,
+            tools=[TimedWebSearchTool(engine="bing")], model=model, name=name, max_steps=6,
             description="Answers questions, searching the web as needed.",
         )
         return name, {name: agent}
 
     research_name = "research_agent"
     research_agent = ToolCallingAgent(
-        tools=[TimedWebSearchTool()], model=model, name=research_name, max_steps=6,
+        tools=[TimedWebSearchTool(engine="bing")], model=model, name=research_name, max_steps=6,
         description="Searches the web and returns findings for a given question.",
     )
     managed: list[MultiStepAgent] = [research_agent]
@@ -124,6 +143,7 @@ def main() -> None:
         api_base="https://api.groq.com/openai/v1",
         api_key=os.environ["GROQ_API_KEY"],
         client_kwargs={"timeout": 60.0, "max_retries": 2},
+        tool_choice="auto",  # "required" (smolagents default) 400s unreliably on this model
     )
     signal.signal(signal.SIGALRM, _alarm)
     ok, failed, skipped = 0, 0, 0

@@ -1,0 +1,13 @@
+{"event": "task_start", "task_id": "manager_multi_specialist_01_1787102900", "timestamp": 1787102900.3007731}
+{"event": "tool_call", "task_id": "manager_multi_specialist_01_1787102900", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787103548.790975}
+{"event": "tool_call", "task_id": "manager_multi_specialist_01_1787102900", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787103551.490363}
+{"event": "tool_call", "task_id": "manager_multi_specialist_01_1787102900", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787103553.189781}
+{"event": "tool_call", "task_id": "manager_multi_specialist_01_1787102900", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787103566.3729038}
+{"event": "tool_call", "task_id": "manager_multi_specialist_01_1787102900", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787103589.5402749}
+{"event": "delegation", "task_id": "manager_multi_specialist_01_1787102900", "parent_agent_id": "manager_agent", "agent_id": "research_agent", "timestamp": 1787102900.3007731}
+{"event": "delegation", "task_id": "manager_multi_specialist_01_1787102900", "parent_agent_id": "manager_agent", "agent_id": "research_agent", "timestamp": 1787103050.268984}
+{"event": "delegation", "task_id": "manager_multi_specialist_01_1787102900", "parent_agent_id": "manager_agent", "agent_id": "research_agent", "timestamp": 1787103111.464888}
+{"event": "tool_call", "task_id": "manager_multi_specialist_01_1787102900", "agent_id": "manager_agent", "tool": "python_interpreter", "timestamp": 1787103288.864046}
+{"event": "delegation", "task_id": "manager_multi_specialist_01_1787102900", "parent_agent_id": "manager_agent", "agent_id": "research_agent", "timestamp": 1787103321.0087419}
+{"event": "tool_call", "task_id": "manager_multi_specialist_01_1787102900", "agent_id": "manager_agent", "tool": "python_interpreter", "timestamp": 1787103666.267544}
+{"event": "task_end", "task_id": "manager_multi_specialist_01_1787102900", "timestamp": 1787103716.398299}
