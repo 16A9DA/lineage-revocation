@@ -1,0 +1,4 @@
+{"event": "task_start", "task_id": "simple_research_03_1786945504", "timestamp": 1786945504.721956}
+{"event": "tool_call", "task_id": "simple_research_03_1786945504", "agent_id": "solo_agent", "tool": "web_search", "timestamp": 1786945504.721956}
+{"event": "tool_call", "task_id": "simple_research_03_1786945504", "agent_id": "solo_agent", "tool": "final_answer", "timestamp": 1786945506.100529}
+{"event": "task_end", "task_id": "simple_research_03_1786945504", "timestamp": 1786945508.160293}

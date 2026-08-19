@@ -1,0 +1,4 @@
+{"event": "task_start", "task_id": "document_technical_analysis_01_1786952677", "timestamp": 1786952677.315426}
+{"event": "tool_call", "task_id": "document_technical_analysis_01_1786952677", "agent_id": "manager_agent", "tool": "python_interpreter", "timestamp": 1786952677.315426}
+{"event": "tool_call", "task_id": "document_technical_analysis_01_1786952677", "agent_id": "manager_agent", "tool": "python_interpreter", "timestamp": 1786952691.211122}
+{"event": "task_end", "task_id": "document_technical_analysis_01_1786952677", "timestamp": 1786952708.183836}

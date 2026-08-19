@@ -1,0 +1,8 @@
+{"event": "task_start", "task_id": "manager_multi_specialist_03_1786979480", "timestamp": 1786979480.274563}
+{"event": "tool_call", "task_id": "manager_multi_specialist_03_1786979480", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1786980932.191134}
+{"event": "delegation", "task_id": "manager_multi_specialist_03_1786979480", "parent_agent_id": "manager_agent", "agent_id": "research_agent", "timestamp": 1786979480.274563}
+{"event": "tool_call", "task_id": "manager_multi_specialist_03_1786979480", "agent_id": "manager_agent", "tool": "python_interpreter", "timestamp": 1786979570.253728}
+{"event": "tool_call", "task_id": "manager_multi_specialist_03_1786979480", "agent_id": "manager_agent", "tool": "python_interpreter", "timestamp": 1786979571.304275}
+{"event": "tool_call", "task_id": "manager_multi_specialist_03_1786979480", "agent_id": "manager_agent", "tool": "python_interpreter", "timestamp": 1786979572.637132}
+{"event": "delegation", "task_id": "manager_multi_specialist_03_1786979480", "parent_agent_id": "manager_agent", "agent_id": "research_agent", "timestamp": 1786979573.975934}
+{"event": "task_end", "task_id": "manager_multi_specialist_03_1786979480", "timestamp": 1786980963.1623418}

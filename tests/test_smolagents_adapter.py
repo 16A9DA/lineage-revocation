@@ -1,5 +1,3 @@
-# tests/fixtures/groq_manager_research_raw.json is a real captured smolagents
-# trace (manager_agent -> research_agent -> web_search, on Groq), not synthetic.
 import json
 from pathlib import Path
 
@@ -11,6 +9,7 @@ FIXTURE = Path(__file__).parent / "fixtures" / "groq_manager_research_raw.json"
 
 
 def test_adapt_produces_one_delegation_and_valid_topology():
+    # fixture is a real captured smolagents trace on Groq, not synthetic
     events = adapt_file(FIXTURE, task_id="t")
     lines = [json.dumps(e) for e in events]
     traces = parse_lines(lines)

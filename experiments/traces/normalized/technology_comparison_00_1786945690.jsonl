@@ -1,0 +1,6 @@
+{"event": "task_start", "task_id": "technology_comparison_00_1786945690", "timestamp": 1786945690.872937}
+{"event": "tool_call", "task_id": "technology_comparison_00_1786945690", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1786945701.6836019}
+{"event": "tool_call", "task_id": "technology_comparison_00_1786945690", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1786945701.6836019}
+{"event": "delegation", "task_id": "technology_comparison_00_1786945690", "parent_agent_id": "manager_agent", "agent_id": "research_agent", "timestamp": 1786945690.872937}
+{"event": "tool_call", "task_id": "technology_comparison_00_1786945690", "agent_id": "manager_agent", "tool": "python_interpreter", "timestamp": 1786945726.9827578}
+{"event": "task_end", "task_id": "technology_comparison_00_1786945690", "timestamp": 1786945739.8516312}

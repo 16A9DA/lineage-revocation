@@ -1,8 +1,3 @@
-# Adapts a raw smolagents trace (as written by
-# experiments/runners/groq_manager_research.py) into the normalized JSONL
-# schema (task_start/delegation/tool_call/task_end). A tool_call whose code
-# invokes a managed agent by name is recorded as delegation, not tool_call,
-# since that is what it structurally is in a smolagents CodeAgent.
 from __future__ import annotations
 
 import json
@@ -10,27 +5,31 @@ from pathlib import Path
 
 
 def adapt(raw: dict, task_id: str) -> list[dict]:
-    manager_name = raw["manager"]["name"]
-    managed_name = raw["research_agent"]["name"]
-
+    # A tool_call whose code invokes another known agent by name is
+    # delegation, not tool use, in a smolagents CodeAgent.
+    agent_names = set(raw["agents"])
     events: list[dict] = []
     starts: list[float] = []
     ends: list[float] = []
 
-    def handle_steps(agent_name: str, steps: list[dict]) -> None:
-        for step in steps:
+    for agent_name, data in raw["agents"].items():
+        for step in data["steps"]:
             timing = step.get("timing")
             if not timing:
                 continue
             ts = timing["start_time"]
             starts.append(ts)
-            ends.append(timing["end_time"])
+            ends.append(timing.get("end_time", ts))
             for tc in step.get("tool_calls", []):
                 args = tc.get("arguments")
-                if isinstance(args, str) and f"{managed_name}(" in args:
+                target = next(
+                    (o for o in agent_names if o != agent_name and isinstance(args, str) and f"{o}(" in args),
+                    None,
+                )
+                if target:
                     events.append({
                         "event": "delegation", "task_id": task_id,
-                        "parent_agent_id": agent_name, "agent_id": managed_name,
+                        "parent_agent_id": agent_name, "agent_id": target,
                         "timestamp": ts,
                     })
                 else:
@@ -39,9 +38,6 @@ def adapt(raw: dict, task_id: str) -> list[dict]:
                         "agent_id": agent_name, "tool": tc["name"],
                         "timestamp": ts,
                     })
-
-    handle_steps(manager_name, raw["manager"]["steps"])
-    handle_steps(managed_name, raw["research_agent"]["steps"])
 
     out = [{"event": "task_start", "task_id": task_id, "timestamp": min(starts)}]
     out.extend(events)

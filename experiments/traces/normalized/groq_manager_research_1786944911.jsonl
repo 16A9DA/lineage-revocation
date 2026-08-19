@@ -1,8 +1,0 @@
-{"event": "task_start", "task_id": "groq_manager_research_1786944911", "timestamp": 1786944897.629766}
-{"event": "tool_call", "task_id": "groq_manager_research_1786944911", "agent_id": "manager_agent", "tool": "python_interpreter", "timestamp": 1786944897.629766}
-{"event": "tool_call", "task_id": "groq_manager_research_1786944911", "agent_id": "manager_agent", "tool": "python_interpreter", "timestamp": 1786944899.4819572}
-{"event": "delegation", "task_id": "groq_manager_research_1786944911", "parent_agent_id": "manager_agent", "agent_id": "research_agent", "timestamp": 1786944900.31245}
-{"event": "tool_call", "task_id": "groq_manager_research_1786944911", "agent_id": "manager_agent", "tool": "python_interpreter", "timestamp": 1786944903.303423}
-{"event": "tool_call", "task_id": "groq_manager_research_1786944911", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1786944900.786494}
-{"event": "tool_call", "task_id": "groq_manager_research_1786944911", "agent_id": "research_agent", "tool": "final_answer", "timestamp": 1786944902.402291}
-{"event": "task_end", "task_id": "groq_manager_research_1786944911", "timestamp": 1786944911.9299562}

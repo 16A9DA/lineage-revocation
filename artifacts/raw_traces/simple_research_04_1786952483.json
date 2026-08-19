@@ -1,0 +1,53 @@
+{
+  "workload_id": "simple_research",
+  "run_id": "04_1786952483",
+  "task": "What is the speed of light in a vacuum, in km/s?",
+  "root_agent": "solo_agent",
+  "agents": {
+    "solo_agent": {
+      "steps": [
+        {
+          "step_type": "TaskStep",
+          "step_number": null,
+          "timing": null,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 1,
+          "timing": {
+            "start_time": 1786952483.963518,
+            "end_time": 1786952485.631625
+          },
+          "tool_calls": [
+            {
+              "name": "web_search",
+              "arguments": {
+                "query": "speed of light in vacuum km/s"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 2,
+          "timing": {
+            "start_time": 1786952485.631962,
+            "end_time": 1786952486.271127
+          },
+          "tool_calls": [
+            {
+              "name": "final_answer",
+              "arguments": {
+                "answer": "299792 km/s"
+              }
+            }
+          ],
+          "error": null
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "workload_id": "simple_research",
+  "run_id": "05_1786945524",
+  "task": "Who is the current Secretary-General of the United Nations?",
+  "root_agent": "solo_agent",
+  "agents": {
+    "solo_agent": {
+      "steps": [
+        {
+          "step_type": "TaskStep",
+          "step_number": null,
+          "timing": null,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 1,
+          "timing": {
+            "start_time": 1786945524.507815,
+            "end_time": 1786945532.159243
+          },
+          "tool_calls": [
+            {
+              "name": "web_search",
+              "arguments": {
+                "query": "current Secretary-General of the United Nations"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 2,
+          "timing": {
+            "start_time": 1786945532.159628,
+            "end_time": 1786945543.095795
+          },
+          "tool_calls": [
+            {
+              "name": "web_search",
+              "arguments": {
+                "query": "Current Secretary-General of the United Nations 2024"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 3,
+          "timing": {
+            "start_time": 1786945543.096173,
+            "end_time": 1786945560.335139
+          },
+          "tool_calls": [
+            {
+              "name": "final_answer",
+              "arguments": {
+                "answer": "Ant\u00f3nio Guterres"
+              }
+            }
+          ],
+          "error": null
+        }
+      ]
+    }
+  }
+}

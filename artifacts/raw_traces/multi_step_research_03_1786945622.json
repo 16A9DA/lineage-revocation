@@ -1,0 +1,53 @@
+{
+  "workload_id": "multi_step_research",
+  "run_id": "03_1786945622",
+  "task": "Find the tallest mountain in Africa and its height in meters.",
+  "root_agent": "solo_agent",
+  "agents": {
+    "solo_agent": {
+      "steps": [
+        {
+          "step_type": "TaskStep",
+          "step_number": null,
+          "timing": null,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 1,
+          "timing": {
+            "start_time": 1786945622.910063,
+            "end_time": 1786945630.619282
+          },
+          "tool_calls": [
+            {
+              "name": "web_search",
+              "arguments": {
+                "query": "tallest mountain in Africa height in meters"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 2,
+          "timing": {
+            "start_time": 1786945630.619553,
+            "end_time": 1786945641.435406
+          },
+          "tool_calls": [
+            {
+              "name": "final_answer",
+              "arguments": {
+                "answer": "Mount Kilimanjaro, 5,895 meters"
+              }
+            }
+          ],
+          "error": null
+        }
+      ]
+    }
+  }
+}

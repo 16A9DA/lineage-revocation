@@ -1,0 +1,7 @@
+{"event": "task_start", "task_id": "document_technical_analysis_04_1786955532", "timestamp": 1786955532.0340521}
+{"event": "tool_call", "task_id": "document_technical_analysis_04_1786955532", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1786955765.4492538}
+{"event": "tool_call", "task_id": "document_technical_analysis_04_1786955532", "agent_id": "research_agent", "tool": "final_answer", "timestamp": 1786955766.925055}
+{"event": "tool_call", "task_id": "document_technical_analysis_04_1786955532", "agent_id": "manager_agent", "tool": "python_interpreter", "timestamp": 1786955532.0340521}
+{"event": "delegation", "task_id": "document_technical_analysis_04_1786955532", "parent_agent_id": "manager_agent", "agent_id": "research_agent", "timestamp": 1786955533.0948842}
+{"event": "tool_call", "task_id": "document_technical_analysis_04_1786955532", "agent_id": "manager_agent", "tool": "python_interpreter", "timestamp": 1786955768.095049}
+{"event": "task_end", "task_id": "document_technical_analysis_04_1786955532", "timestamp": 1786955768.822989}

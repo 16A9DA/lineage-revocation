@@ -13,6 +13,7 @@ implementation_plan.md
 task.md
 system_architecture.md
 .cursorrules
+COLLECTION_STATUS.md
 
 __pycache__/
 *.pyc

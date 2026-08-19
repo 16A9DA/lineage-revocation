@@ -1,0 +1,5 @@
+{"event": "task_start", "task_id": "multi_step_research_01_1786952486", "timestamp": 1786952486.280781}
+{"event": "tool_call", "task_id": "multi_step_research_01_1786952486", "agent_id": "solo_agent", "tool": "web_search", "timestamp": 1786952486.280781}
+{"event": "tool_call", "task_id": "multi_step_research_01_1786952486", "agent_id": "solo_agent", "tool": "web_search", "timestamp": 1786952487.922379}
+{"event": "tool_call", "task_id": "multi_step_research_01_1786952486", "agent_id": "solo_agent", "tool": "final_answer", "timestamp": 1786952489.685201}
+{"event": "task_end", "task_id": "multi_step_research_01_1786952486", "timestamp": 1786952490.6616619}

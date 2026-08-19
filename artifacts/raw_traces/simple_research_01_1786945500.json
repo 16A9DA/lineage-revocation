@@ -1,0 +1,53 @@
+{
+  "workload_id": "simple_research",
+  "run_id": "01_1786945500",
+  "task": "Who wrote the novel Dune?",
+  "root_agent": "solo_agent",
+  "agents": {
+    "solo_agent": {
+      "steps": [
+        {
+          "step_type": "TaskStep",
+          "step_number": null,
+          "timing": null,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 1,
+          "timing": {
+            "start_time": 1786945500.898222,
+            "end_time": 1786945502.460639
+          },
+          "tool_calls": [
+            {
+              "name": "web_search",
+              "arguments": {
+                "query": "author of novel Dune"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 2,
+          "timing": {
+            "start_time": 1786945502.46105,
+            "end_time": 1786945502.8035789
+          },
+          "tool_calls": [
+            {
+              "name": "final_answer",
+              "arguments": {
+                "answer": "Frank Herbert"
+              }
+            }
+          ],
+          "error": null
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "workload_id": "simple_research",
+  "run_id": "00_1786945498",
+  "task": "What is the boiling point of water at sea level in Celsius?",
+  "root_agent": "solo_agent",
+  "agents": {
+    "solo_agent": {
+      "steps": [
+        {
+          "step_type": "TaskStep",
+          "step_number": null,
+          "timing": null,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 1,
+          "timing": {
+            "start_time": 1786945498.689535,
+            "end_time": 1786945500.54101
+          },
+          "tool_calls": [
+            {
+              "name": "web_search",
+              "arguments": {
+                "query": "boiling point of water at sea level in Celsius"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 2,
+          "timing": {
+            "start_time": 1786945500.541497,
+            "end_time": 1786945500.879253
+          },
+          "tool_calls": [
+            {
+              "name": "final_answer",
+              "arguments": {
+                "answer": "100\u00b0C"
+              }
+            }
+          ],
+          "error": null
+        }
+      ]
+    }
+  }
+}

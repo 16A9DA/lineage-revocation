@@ -1,0 +1,5 @@
+{"event": "task_start", "task_id": "simple_research_05_1786945524", "timestamp": 1786945524.507815}
+{"event": "tool_call", "task_id": "simple_research_05_1786945524", "agent_id": "solo_agent", "tool": "web_search", "timestamp": 1786945524.507815}
+{"event": "tool_call", "task_id": "simple_research_05_1786945524", "agent_id": "solo_agent", "tool": "web_search", "timestamp": 1786945532.159628}
+{"event": "tool_call", "task_id": "simple_research_05_1786945524", "agent_id": "solo_agent", "tool": "final_answer", "timestamp": 1786945543.096173}
+{"event": "task_end", "task_id": "simple_research_05_1786945524", "timestamp": 1786945560.335139}
