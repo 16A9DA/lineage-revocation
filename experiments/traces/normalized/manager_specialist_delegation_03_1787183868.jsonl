@@ -1,0 +1,11 @@
+{"event": "task_start", "task_id": "manager_specialist_delegation_03_1787183868", "timestamp": 1787183868.024734}
+{"event": "tool_call", "task_id": "manager_specialist_delegation_03_1787183868", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787184031.1581051}
+{"event": "tool_call", "task_id": "manager_specialist_delegation_03_1787183868", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787184049.548245}
+{"event": "tool_call", "task_id": "manager_specialist_delegation_03_1787183868", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787184068.701671}
+{"event": "tool_call", "task_id": "manager_specialist_delegation_03_1787183868", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787184088.765836}
+{"event": "tool_call", "task_id": "manager_specialist_delegation_03_1787183868", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787184123.086646}
+{"event": "tool_call", "task_id": "manager_specialist_delegation_03_1787183868", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787184161.141336}
+{"event": "delegation", "task_id": "manager_specialist_delegation_03_1787183868", "parent_agent_id": "manager_agent", "agent_id": "research_agent", "timestamp": 1787183868.024734}
+{"event": "delegation", "task_id": "manager_specialist_delegation_03_1787183868", "parent_agent_id": "manager_agent", "agent_id": "research_agent", "timestamp": 1787184018.009862}
+{"event": "tool_call", "task_id": "manager_specialist_delegation_03_1787183868", "agent_id": "manager_agent", "tool": "python_interpreter", "timestamp": 1787184253.281405}
+{"event": "task_end", "task_id": "manager_specialist_delegation_03_1787183868", "timestamp": 1787184297.8278148}
