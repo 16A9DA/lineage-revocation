@@ -63,6 +63,22 @@ def test_cycle_detected():
         compute_metrics(trace)
 
 
+def test_repeated_delegation_to_same_child_accepted():
+    trace = Trace(
+        task_id="retry",
+        delegations=[
+            DelegationEvent(task_id="retry", parent_agent_id="manager", agent_id="research"),
+            DelegationEvent(task_id="retry", parent_agent_id="manager", agent_id="research"),
+        ],
+        tool_calls=[],
+    )
+    m = compute_metrics(trace)
+    assert m.num_agents == 2
+    assert m.delegation_count == 2  # both retry events still counted
+    assert m.max_depth == 1
+    assert m.fanout == [1]  # one distinct child, not two
+
+
 def test_multiple_roots_rejected():
     trace = Trace(
         task_id="split",

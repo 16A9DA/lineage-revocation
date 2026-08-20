@@ -28,7 +28,12 @@ def compute_metrics(trace: Trace) -> TraceMetrics:
     created: set[str] = set()
 
     for d in trace.delegations:
-        children[d.parent_agent_id].append(d.agent_id)
+        # A parent may legitimately delegate to the same child more than once
+        # (e.g. retrying a specialist with a refined query). That's a repeated
+        # edge, not a second edge, so dedupe here rather than let the BFS below
+        # mistake a revisited-via-duplicate-edge child for a cycle.
+        if d.agent_id not in children[d.parent_agent_id]:
+            children[d.parent_agent_id].append(d.agent_id)
         all_agents.add(d.parent_agent_id)
         all_agents.add(d.agent_id)
         created.add(d.agent_id)
