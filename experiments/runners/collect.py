@@ -150,11 +150,14 @@ def _record_failure(workload_id: str, index: int, task: str, attempts: list[dict
 
 def main() -> None:
     model = OpenAIServerModel(
-        model_id="openai/gpt-oss-120b",
+        # gpt-oss-120b intermittently emits tool-call JSON on CodeAgent's plain
+        # code-gen turns (no tools registered there); Groq then 400s with
+        # "Tool choice is none, but model called a tool". qwen3.6-27b doesn't
+        # share that habit.
+        model_id="qwen/qwen3.6-27b",
         api_base="https://api.groq.com/openai/v1",
         api_key=os.environ["GROQ_API_KEY"],
         client_kwargs={"timeout": 60.0, "max_retries": 2},
-        tool_choice="auto",  # "required" (smolagents default) 400s unreliably on this model
     )
     signal.signal(signal.SIGALRM, _alarm)
     ok, failed, skipped = 0, 0, 0
