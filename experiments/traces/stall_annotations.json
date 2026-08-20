@@ -1,0 +1,13 @@
+{
+  "_comment": "Traces whose task_duration is dominated by API-side wait (LLM completion latency), not code/tool execution, per docs/duration-outlier-investigation.md. Lower bounds only, derived from smolagents' 30s local code-execution cap. Not used to exclude these traces from any metric other than task_duration.",
+  "document_technical_analysis_03_1786952732": {
+    "task_duration_s": 2799.86,
+    "stall_lower_bound_s": 2756.88,
+    "basis": "step 2 succeeded with no error; 30s code-exec cap not hit; duration - 30s is API-wait lower bound"
+  },
+  "manager_multi_specialist_02_1786970824": {
+    "task_duration_s": 8655.29,
+    "stall_lower_bound_s": 8508.29,
+    "basis": "sum of per-step API-wait lower bounds: step1 2851.86s + step3 813.76s (no code-exec, generation-validation error) + step5 4927.37s; step4 (web_search, 796.31s) not decomposable under the 30s cap and reported as-is, not included in this sum"
+  }
+}

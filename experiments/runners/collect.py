@@ -27,11 +27,15 @@ NORM_DIR = ROOT / "experiments" / "traces" / "normalized"
 
 class TimedWebSearchTool(WebSearchTool):
     # WebSearchTool.search_duckduckgo/search_bing call requests.get with no
-    # timeout; a stalled response hangs the run forever. Same requests, bounded.
+    # timeout and no safe-search, in the underlying smolagents implementation;
+    # a stalled response hangs the run forever, and an unfiltered query can
+    # return illegal/objectionable content (observed directly: a benign
+    # research prompt returned CSAM-adjacent results with safe-search off).
+    # Same requests, bounded and filtered.
     def search_duckduckgo(self, query: str) -> list:
         response = requests.get(
             "https://lite.duckduckgo.com/lite/",
-            params={"q": query},
+            params={"q": query, "kp": "1"},  # kp=1: strict safe-search
             headers={"User-Agent": "Mozilla/5.0"},
             timeout=15,
         )
@@ -45,7 +49,7 @@ class TimedWebSearchTool(WebSearchTool):
 
         response = requests.get(
             "https://www.bing.com/search",
-            params={"q": query, "format": "rss"},
+            params={"q": query, "format": "rss", "adlt": "strict"},  # adlt=strict: safe-search
             timeout=15,
         )
         response.raise_for_status()
