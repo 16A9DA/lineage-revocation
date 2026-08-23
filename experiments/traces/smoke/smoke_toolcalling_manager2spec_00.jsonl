@@ -1,0 +1,12 @@
+{"event": "task_start", "task_id": "smoke_toolcalling_manager2spec_00", "timestamp": 1787456479.164484}
+{"event": "delegation", "task_id": "smoke_toolcalling_manager2spec_00", "parent_agent_id": "manager_agent", "agent_id": "research_agent", "timestamp": 1787456479.164484}
+{"event": "delegation", "task_id": "smoke_toolcalling_manager2spec_00", "parent_agent_id": "manager_agent", "agent_id": "math_agent", "timestamp": 1787456636.411606}
+{"event": "tool_call", "task_id": "smoke_toolcalling_manager2spec_00", "agent_id": "manager_agent", "tool": "final_answer", "timestamp": 1787456688.452136}
+{"event": "tool_call", "task_id": "smoke_toolcalling_manager2spec_00", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787456479.819017}
+{"event": "tool_call", "task_id": "smoke_toolcalling_manager2spec_00", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787456480.634145}
+{"event": "tool_call", "task_id": "smoke_toolcalling_manager2spec_00", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787456481.260065}
+{"event": "tool_call", "task_id": "smoke_toolcalling_manager2spec_00", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787456486.421154}
+{"event": "tool_call", "task_id": "smoke_toolcalling_manager2spec_00", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787456517.358989}
+{"event": "tool_call", "task_id": "smoke_toolcalling_manager2spec_00", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787456552.4192169}
+{"event": "tool_call", "task_id": "smoke_toolcalling_manager2spec_00", "agent_id": "math_agent", "tool": "python_interpreter", "timestamp": 1787456684.22719}
+{"event": "task_end", "task_id": "smoke_toolcalling_manager2spec_00", "timestamp": 1787456721.265179}
