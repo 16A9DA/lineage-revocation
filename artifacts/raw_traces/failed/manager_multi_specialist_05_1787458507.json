@@ -1,0 +1,26 @@
+{
+  "workload_id": "manager_multi_specialist",
+  "index": 5,
+  "task": "Find the height of the Eiffel Tower in meters, then compute its height in feet.",
+  "status": "failed",
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_id": "05_1787458503",
+      "error_type": "AgentGenerationError",
+      "error": "Error in generating model output:\nConnection error."
+    },
+    {
+      "attempt": 2,
+      "run_id": "05_1787458504",
+      "error_type": "AgentGenerationError",
+      "error": "Error in generating model output:\nConnection error."
+    },
+    {
+      "attempt": 3,
+      "run_id": "05_1787458506",
+      "error_type": "AgentGenerationError",
+      "error": "Error in generating model output:\nConnection error."
+    }
+  ]
+}

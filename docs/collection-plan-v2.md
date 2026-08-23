@@ -1,51 +1,88 @@
 # Collection Plan v2
 
-Covers what to collect next, if/when more real-trace collection is authorized. This is a plan, not a collection run — nothing here has been executed. It exists to fix the structural gap found in `docs/instrumentation-validity-evidence.md`: the current 33-trace dataset cannot show `max_depth > 1` or `fanout > 1` no matter what the model does, because every collected topology (`solo`, `manager_1`, `manager_2`) structurally caps them there.
+## Purpose and evidence boundary
 
-## What each current cell can and can't inform
+This plan separates two evidence streams:
 
-| workload group | topology | framework | model | n | can inform | cannot inform |
-|---|---|---|---|---|---|---|
-| simple_research, multi_step_research | solo | smolagents CodeAgent | qwen/qwen3.6-27b | 6 each | zero-delegation baseline | depth, fanout (0 managed agents, structurally) |
-| technology_comparison, document_technical_analysis, manager_specialist_delegation | manager_1 | smolagents CodeAgent | qwen/qwen3.6-27b | 6 each | depth<=1, delegation propensity by prompt | fanout>1 (1 managed agent, structurally) |
-| manager_multi_specialist | manager_2 | smolagents CodeAgent | qwen/qwen3.6-27b | 3 (6 planned, 3 pending — item 4) | fanout in {0,1,2} | depth>1; fanout>1 never observed behaviorally either (§5 of evidence package) |
+1. **Measured real traces.** Agent runs against a live model/provider. They can describe behavior of that exact configuration only.
+2. **Controlled synthetic benchmarks.** Deterministic delegation trees exercised against the frozen protocol. They measure protocol cost and correctness over depth/fanout cells; they cannot establish real-world agent delegation distributions.
 
-No cell in the current plan can produce depth > 1 or fanout > 2 no matter how much more is collected under the same three topologies. v2 adds the topologies and one framework needed to actually reach those cells.
+The existing real-trace corpus has 33 traces collected with smolagents and Groq `qwen/qwen3.6-27b`. It establishes a measured floor, not a maximum: current `solo`, `manager_1`, and `manager_2` topologies structurally cap depth at 0/1 and supply at most two direct specialists. See `docs/instrumentation-validity-evidence.md`.
 
-## New topologies (same framework: smolagents CodeAgent)
+No collection configuration changes `src/lineage_revocation/`. New real traces remain separate from the 33 historical traces. Controlled traces remain in a separate controlled-results location and are never pooled with real traces.
 
-Both are direct extensions of the existing `_build(topology, model)` pattern in `experiments/runners/collect.py` — no new dependency, reuses the existing manager/CodeAgent scaffolding.
+## Existing cells: valid uses and limits
 
-- **`chained_2`** (depth axis): manager -> mid_agent -> leaf_agent, three levels, one managed agent at each level. Structural depth ceiling = 2. Needed because every current topology structurally caps depth at 1.
-- **`manager_4`** (fanout axis, CodeAgent): one manager, four managed leaf agents (research_agent, math_agent, unit_agent, lookup_agent). Structural fanout ceiling = 4. Still subject to the same behavioral risk found in `manager_multi_specialist` (§5 of the evidence package: registering more specialists doesn't mean the model calls them) — prompts must force multi-specialist use, see below.
+| workload group | topology | framework/provider/model | observed n | may inform | cannot inform |
+|---|---|---|---:|---|---|
+| simple_research, multi_step_research | solo | ToolCallingAgent, Groq `qwen/qwen3.6-27b` | 6 each | zero-delegation baseline | delegation depth or fanout |
+| technology_comparison, document_technical_analysis, manager_specialist_delegation | manager_1 | CodeAgent manager, Groq `qwen/qwen3.6-27b` | 6 each | delegation propensity and depth 0/1 | breadth above one child; depth above one hop |
+| manager_multi_specialist | manager_2 | CodeAgent manager, Groq `qwen/qwen3.6-27b` | 3 historical, 3 pending | sequential use of named specialists; depth 0/1 | concurrent fanout; depth above one hop |
 
-## New framework: smolagents `ToolCallingAgent` (fanout axis, genuine parallel delegation)
+`CodeAgent` executes generated Python synchronously. Registering four specialists does not make it a genuine parallel-fanout executor. It may provide an exploratory measurement of sequential, distinct-child delegation only when the raw trace shows those calls; it must not be labelled as evidence of concurrent/model-parallel fanout.
 
-Already installed (same `smolagents` package, different agent class — `CodeAgent` generates Python that calls managed agents sequentially in code; `ToolCallingAgent` uses native JSON tool-calling, where a single model turn can request multiple tool calls at once if the underlying model/provider supports parallel tool calls). Exposing managed agents as tools to a `ToolCallingAgent` manager and observing a single turn requesting 2+ managed-agent tool calls is a structurally different delegation mechanism than the current substring-match-on-generated-code approach, and is the one candidate here for **genuinely concurrent, model-decided multi-child delegation** rather than sequential Python calls.
+## Preserved ToolCallingAgent observation
 
-This needs its own adapter path (a `ToolCallingAgent` raw trace records tool calls as structured JSON per turn, not as a Python code string — the current `smolagents_adapter.py`'s substring-match logic doesn't apply and shouldn't be forced to). Not built yet; scoped as its own implementation item, not bundled into this plan silently.
+`experiments/traces/smoke/smoke_toolcalling_manager2spec_00.jsonl` is real measured data. Its `ToolCallingAgent` manager invoked both `research_agent` and `math_agent`; metrics are `num_agents=3`, `delegation_count=2`, `max_depth=1`, and `fanout=[2]`. Preserve it as a valid observed breadth measurement.
 
-Before any real collection on this path: **smoke-test whether the selected model actually emits parallel tool calls on Groq at all.** This is the same category of risk that caused the `gpt-oss-120b` swap — not every model/provider combination reliably supports `parallel_tool_calls`, and finding that out mid-collection wastes a run. One task, `manager_4` topology via `ToolCallingAgent`, checked by hand before any n>1 collection.
+The two delegations occurred in separate manager turns, so this run is not evidence of same-turn parallel execution. A separate probe (`probe_00_neutral`) captured a same-turn two-tool-call generation, but Groq returned `400 tool_use_failed`; it is evidence that the model attempted the form, not that parallel execution completed. Therefore, do not discard `ToolCallingAgent` and do not infer that the model cannot parallelize. The supported conclusion is narrower: same-turn multi-tool calls are unreliable for this Groq/model configuration.
 
-## Prompt families
+## Real-trace collection configurations
 
-The evidence package (§6) found delegation propensity is prompt-driven far more than topology-driven — same `manager_1` topology, 1/6 vs 6/6 delegation rate depending on wording. v2 adds a prompt family designed against that finding, instead of hoping more managed agents alone produces more delegation:
+### Depth configuration: D2
 
-- **`forced_multi_lookup`** (new): explicitly asks for N independently-sourced facts to be combined ("look up X, look up Y, look up Z, then combine them"), matching the phrasing style of `manager_specialist_delegation` (the one prompt family that got 6/6 delegation) rather than `document_technical_analysis`/`technology_comparison` (1/6 each). Used for both `manager_4`/CodeAgent and the `ToolCallingAgent` fanout cells. 6 prompts, mirroring the existing per-workload convention.
-- Existing prompt families (`simple_research`, `multi_step_research`, `technology_comparison`, `document_technical_analysis`, `manager_specialist_delegation`, `manager_multi_specialist`) carry over unchanged for `chained_2` where relevant — reuse existing wording rather than inventing new tasks for a topology change alone.
+- Framework: smolagents `CodeAgent` hierarchy.
+- Topology: `manager_agent` delegates to `mid_agent`, which delegates to `leaf_research_agent` (`chained_2`).
+- Provider/model: Groq `qwen/qwen3.6-27b`, continuing the historical configuration.
+- Prompt family: six current-version lookup prompts from `manager_specialist_delegation`, rewritten only to require the manager to obtain its answer through the mid agent and the mid agent to obtain cited facts through the leaf.
+- Target: `n=6` successful traces. Record attempts and failures separately; never replace failed evidence with an unmarked retry.
+- Axis claim: real, measured depth behavior up to two delegation hops. It does not inform genuine parallel fanout.
 
-## Proposed matrix (not yet run)
+### Sequential-breadth diagnostic: B-seq
 
-| cell | framework | topology | model | prompt family | target n | axis |
-|---|---|---|---|---|---|---|
-| A | CodeAgent | chained_2 | qwen/qwen3.6-27b | manager_specialist_delegation wording, adapted to 2-hop | 6 | depth |
-| B | CodeAgent | manager_4 | qwen/qwen3.6-27b | forced_multi_lookup | 6 | fanout |
-| C | ToolCallingAgent | manager_4 | qwen/qwen3.6-27b (pending smoke test) | forced_multi_lookup | 1 smoke test, then 6 | fanout, concurrency |
+- Framework: smolagents `CodeAgent` hierarchy.
+- Topology: one manager with four named leaf specialists (`manager_4`) only after implementation is verified to register all four.
+- Current repository state: `forced_multi_lookup` declares `manager_4`, but `experiments/runners/collect.py` has no `manager_4` branch. This cell is planned, not runnable; do not collect it until that mismatch is resolved and tested.
+- Provider/model: Groq `qwen/qwen3.6-27b`.
+- Prompt family: `forced_multi_lookup`, six independent fact pairs plus combination work; each prompt names the required specialist outputs.
+- Target: `n=6` attempted tasks, with successful, failed, and skipped counts reported separately.
+- Axis claim: exploratory sequential distinct-child breadth only. It can inform whether prompts induce multiple registered-child calls. It cannot be used as a genuine fanout/concurrency result because CodeAgent's executor is synchronous.
 
-n=6 per cell follows the existing per-workload-group convention already used for all 33 collected traces, not a new invented number.
+### Genuine fanout configuration: F-par
 
-## Explicitly out of scope for this plan
+- Framework: smolagents `ToolCallingAgent` manager with four managed specialist tools (`manager_4`). Its structured tool-call trace is adapted by `measurement.adapters.smolagents_toolcalling_adapter`, not by the CodeAgent substring adapter.
+- Current repository state: no ToolCallingAgent `manager_4` construction exists in the live collector. F-par remains a gated plan item, not an executed configuration.
+- Candidate provider/model: a provider/model with documented and demonstrated multi-tool-call support. Initial acceptance candidates are a non-Groq OpenAI-compatible provider/model or local Ollama model/runtime with parallel tool-call support. Selection is empirical, not assumed.
+- Prompt family: `forced_multi_lookup` with at least two independent specialist requests and no data dependency between them. Include an explicit same-turn instruction plus a neutral counterpart to distinguish prompt forcing from capability.
+- Gate before collection: one smoke trace must complete with two or more registered-agent tool calls in one manager step. Save raw structured tool calls, provider/model/version, runtime concurrency setting, and wall-clock overlap. A failed provider request is a failed smoke result, not fanout.
+- Target after gate: `n=6` successful traces for each chosen provider/model cell, plus all failed/timeout attempts. If smoke never passes, record F-par as unavailable for that provider/model and do not substitute CodeAgent results.
+- Axis claim: genuine observed fanout only for completed same-turn multi-agent calls. Sequential ToolCallingAgent calls remain valid breadth observations, including the preserved `fanout=[2]` smoke trace, but are not parallelism evidence.
 
-- No new external framework/dependency (LangGraph, CrewAI, AutoGen, etc.) — `ToolCallingAgent` already covers the "genuine parallel delegation" requirement from within the installed `smolagents` package.
-- No collection against `src/lineage_revocation/` — this plan is entirely about the smolagents measurement layer, same boundary as everything else in this dataset.
-- No execution of this matrix yet. Only the 3 missing `manager_multi_specialist` tasks (item 4, existing `manager_2` topology, no new code needed) are authorized right now.
+### Path to an alternate provider or local Ollama
+
+1. Run a bounded capability smoke with same `ToolCallingAgent` topology and prompt on one alternate provider/model or local Ollama runtime.
+2. Verify raw step contains two or more registered-agent tool calls in one manager step and that requests complete. For local Ollama, record model tag, Ollama version, host concurrency settings, and tool-calling template.
+3. If accepted, freeze that provider/model/runtime for all six F-par runs. If rejected, retain raw failure evidence and test the next candidate. Do not repeatedly retry Groq `qwen/qwen3.6-27b` as a substitute for a fanout-capable cell.
+4. Report provider behavior as a configuration limitation, never as a general limitation of agent parallelism.
+
+## Matrix and interpretation
+
+| cell | evidence type | framework/topology | provider/model | prompt family | target | primary axis | interpretation limit |
+|---|---|---|---|---|---:|---|---|
+| D2 | real measured | CodeAgent `chained_2` | Groq `qwen/qwen3.6-27b` | two-hop version lookup | 6 successful | depth | no parallel fanout claim |
+| B-seq | real measured diagnostic | CodeAgent `manager_4` | Groq `qwen/qwen3.6-27b` | forced_multi_lookup | 6 attempted | sequential breadth | not genuine fanout/concurrency |
+| F-par | real measured, gated | ToolCallingAgent `manager_4` | accepted alternate provider/model or local Ollama | forced_multi_lookup | 6 successful/provider | genuine fanout | only after same-step multi-call smoke passes |
+| C-depth/fanout | controlled synthetic | frozen protocol tree generator | local deterministic harness | generated topology cells | see below | verifier/revocation scaling | not real-agent behavior |
+
+## Controlled benchmark, separate from real traces
+
+Begin independently of real-trace collection. Use the frozen protocol unchanged. Sweep a fixed grid that isolates both axes, for example depth `{0, 1, 2, 4, 8}` and fanout `{1, 2, 4, 8}` where valid. Run at least 30 repetitions per cell after a warmup, with deterministic tree generation and recorded software/hardware metadata.
+
+For every cell, record verifier-side latency/cost metrics already exposed by the harness, revocation propagation latency/cost when exposed, and revocation correctness. Run the TTL-only baseline under the same controlled topology and workload when the harness supports it. If the baseline or a metric is unsupported, record it as unavailable; do not create a proxy silently. Report crossover findings as controlled/projected protocol results, not observed real-world agent behavior.
+
+## Provider limitations and reporting rules
+
+- Groq `qwen/qwen3.6-27b`: sequential `ToolCallingAgent` breadth observed; same-turn multi-tool generation can fail with `400 tool_use_failed`. It is unsuitable for F-par until a successful smoke disproves that limitation.
+- Prompt wording materially changes delegation propensity. Report prompt family, topology, registered-agent count, and provider/model beside each result.
+- Raw traces are authoritative for executed calls. Adapter-derived events must be corroborated against raw call records before aggregation.
+- Preserve every timeout, provider error, retry, and incomplete run as evidence. Do not overwrite the 33 historical traces, alter schemas, or merge synthetic and real samples.

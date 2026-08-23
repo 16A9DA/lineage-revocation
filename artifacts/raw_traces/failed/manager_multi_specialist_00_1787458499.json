@@ -1,0 +1,26 @@
+{
+  "workload_id": "manager_multi_specialist",
+  "index": 0,
+  "task": "Find the current population of France, then compute what 10 percent of it is.",
+  "status": "failed",
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_id": "00_1787458494",
+      "error_type": "AgentGenerationError",
+      "error": "Error in generating model output:\nConnection error."
+    },
+    {
+      "attempt": 2,
+      "run_id": "00_1787458496",
+      "error_type": "AgentGenerationError",
+      "error": "Error in generating model output:\nConnection error."
+    },
+    {
+      "attempt": 3,
+      "run_id": "00_1787458497",
+      "error_type": "AgentGenerationError",
+      "error": "Error in generating model output:\nConnection error."
+    }
+  ]
+}

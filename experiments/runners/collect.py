@@ -90,6 +90,24 @@ def _build(topology: str, model) -> tuple[str, dict[str, MultiStepAgent]]:
         )
         return name, {name: agent}
 
+    if topology == "chained_2":
+        leaf_name = "leaf_research_agent"
+        leaf_agent = ToolCallingAgent(
+            tools=[TimedWebSearchTool(engine="bing")], model=model, name=leaf_name, max_steps=6,
+            description="Searches the web and returns findings for a given question.",
+        )
+        mid_name = "mid_agent"
+        mid_agent = CodeAgent(
+            tools=[], model=model, managed_agents=[leaf_agent], max_steps=6,
+            name=mid_name, description="Coordinates with a research specialist to answer a question.",
+        )
+        manager_name = "manager_agent"
+        manager = CodeAgent(
+            tools=[], model=model, managed_agents=[mid_agent], max_steps=6,
+            name=manager_name, description="Delegates to a coordinating specialist as needed.",
+        )
+        return manager_name, {leaf_name: leaf_agent, mid_name: mid_agent, manager_name: manager}
+
     research_name = "research_agent"
     research_agent = ToolCallingAgent(
         tools=[TimedWebSearchTool(engine="bing")], model=model, name=research_name, max_steps=6,

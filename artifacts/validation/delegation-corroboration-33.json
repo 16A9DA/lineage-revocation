@@ -1,0 +1,13 @@
+{
+  "dataset": "artifacts/raw_traces/*.json",
+  "excluded": ["artifacts/raw_traces/failed/*"],
+  "trace_count": 33,
+  "validator": "measurement.adapters.smolagents_adapter.adapt_file",
+  "delegation_events": {
+    "total": 21,
+    "corroborated": 21,
+    "uncorroborated": 0
+  },
+  "traces_with_validation_failures": 0,
+  "result": "21/21 corroborated"
+}

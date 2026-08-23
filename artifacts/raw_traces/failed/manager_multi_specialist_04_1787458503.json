@@ -1,0 +1,26 @@
+{
+  "workload_id": "manager_multi_specialist",
+  "index": 4,
+  "task": "Find the current world record for the marathon, then compute the average pace per kilometer.",
+  "status": "failed",
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_id": "04_1787458499",
+      "error_type": "AgentGenerationError",
+      "error": "Error in generating model output:\nConnection error."
+    },
+    {
+      "attempt": 2,
+      "run_id": "04_1787458500",
+      "error_type": "AgentGenerationError",
+      "error": "Error in generating model output:\nConnection error."
+    },
+    {
+      "attempt": 3,
+      "run_id": "04_1787458501",
+      "error_type": "AgentGenerationError",
+      "error": "Error in generating model output:\nConnection error."
+    }
+  ]
+}
