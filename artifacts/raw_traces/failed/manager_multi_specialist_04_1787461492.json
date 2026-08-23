@@ -1,0 +1,26 @@
+{
+  "workload_id": "manager_multi_specialist",
+  "index": 4,
+  "task": "Find the current world record for the marathon, then compute the average pace per kilometer.",
+  "status": "failed",
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_id": "04_1787460347",
+      "error_type": "AgentGenerationError",
+      "error": "Error in generating model output:\ntask exceeded wall-clock budget"
+    },
+    {
+      "attempt": 2,
+      "run_id": "04_1787460510",
+      "error_type": "AgentGenerationError",
+      "error": "Error in generating model output:\ntask exceeded wall-clock budget"
+    },
+    {
+      "attempt": 3,
+      "run_id": "04_1787460660",
+      "error_type": "AgentGenerationError",
+      "error": "Error in generating model output:\nError code: 429 - {'error': {'message': 'Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ky3e0s5hf1b8pczab0w40xby` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199624, Requested 2642. Please try again in 16m18.912s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}"
+    }
+  ]
+}

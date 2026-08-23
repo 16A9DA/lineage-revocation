@@ -116,7 +116,7 @@ def _build(topology: str, model) -> tuple[str, dict[str, MultiStepAgent]]:
     managed: list[MultiStepAgent] = [research_agent]
     agents: dict[str, MultiStepAgent] = {research_name: research_agent}
 
-    if topology == "manager_2":
+    if topology in ("manager_2", "manager_4"):
         math_name = "math_agent"
         math_agent = CodeAgent(
             tools=[], model=model, name=math_name, max_steps=6,
@@ -124,6 +124,21 @@ def _build(topology: str, model) -> tuple[str, dict[str, MultiStepAgent]]:
         )
         managed.append(math_agent)
         agents[math_name] = math_agent
+
+    if topology == "manager_4":
+        lookup_name = "lookup_agent"
+        lookup_agent = ToolCallingAgent(
+            tools=[TimedWebSearchTool(engine="bing")], model=model, name=lookup_name, max_steps=6,
+            description="Searches the web for a second, independent fact.",
+        )
+        unit_name = "unit_agent"
+        unit_agent = CodeAgent(
+            tools=[], model=model, name=unit_name, max_steps=6,
+            description="Converts a given value between units.",
+        )
+        managed.extend([lookup_agent, unit_agent])
+        agents[lookup_name] = lookup_agent
+        agents[unit_name] = unit_agent
 
     manager_name = "manager_agent"
     manager = CodeAgent(
@@ -171,6 +186,10 @@ def _record_failure(workload_id: str, index: int, task: str, attempts: list[dict
 
 
 def main() -> None:
+    import sys
+
+    only = set(sys.argv[1:]) or None  # optional workload_id allow-list
+
     model = OpenAIServerModel(
         # gpt-oss-120b intermittently emits tool-call JSON on CodeAgent's plain
         # code-gen turns (no tools registered there); Groq then 400s with
@@ -184,6 +203,8 @@ def main() -> None:
     signal.signal(signal.SIGALRM, _alarm)
     ok, failed, skipped = 0, 0, 0
     for workload_id, topology, tasks in WORKLOADS:
+        if only and workload_id not in only:
+            continue
         for i, task in enumerate(tasks):
             if any(RAW_DIR.glob(f"{workload_id}_{i:02d}_*.json")):
                 skipped += 1

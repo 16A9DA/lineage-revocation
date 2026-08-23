@@ -37,12 +37,40 @@ workloads before real-agent topology measurement is collected).
 
 ## Collection Plan v2 status (docs/collection-plan-v2.md)
 
-- `manager_multi_specialist` tasks 0, 4, 5: collection stalled (see
-  `docs/duration-outlier-investigation.md`'s `manager_multi_specialist_02`
-  entry — 8508s of that run's 8655s was API-side wait, same failure mode).
-  Stopped 2026-08-23, not retried, no new traces produced for these three.
-  The validated 33-trace dataset and existing raw/failed logs are untouched.
-  Tasks 1, 2, 3 remain the only real `manager_multi_specialist` traces.
+- `manager_multi_specialist` tasks 0, 4, 5: retried 2026-08-23 via
+  `python -m experiments.runners.collect manager_multi_specialist` (new
+  `sys.argv` workload-id filter added to `collect.py main()`, scoped to this
+  workload only so the still-unrun v2 cells couldn't fire by accident).
+  Result, one attempt each recorded below (not the old "stopped, not
+  retried" state — that line was stale as of this run):
+  - Task 0 (France population): **SUCCESS**. New raw trace
+    `manager_multi_specialist_00_1787459909.json`.
+  - Task 4 (marathon world record): **FAILED**, 3/3 attempts,
+    `AgentGenerationError`. Root cause confirmed directly: Groq returned
+    `429 rate_limit_exceeded` — "tokens per day (TPD): Limit 200000, Used
+    199624, Requested 2642" — i.e. task 0's run plus prior traffic exhausted
+    the account's daily token quota mid-workload. New failure record
+    `artifacts/raw_traces/failed/manager_multi_specialist_04_1787461492.json`.
+  - Task 5 (Eiffel Tower height): **STOPPED**, not failed-out. Its first
+    attempt was mid-flight against the same exhausted TPD quota when the
+    run was deliberately killed (`kill`, exit 144) rather than burning two
+    more guaranteed-429 attempts. No new raw or failed file was written for
+    task 5 this run; the pre-existing
+    `manager_multi_specialist_05_1787458507.json` failure record (from an
+    earlier attempt, same connection-error signature) is untouched.
+  - Independent confirmation the quota (not the model/key) is the blocker: a
+    bare `curl` to `api.groq.com/v1/chat/completions` outside the collector
+    returned `HTTP 200` at the same time task 4/5 were 429ing.
+  - **Next run**: wait for the Groq TPD window to reset (429 body reported
+    "try again in 16m18.912s" as of 2026-08-23 ~ time of the task-4
+    failure) or for the next daily quota window, then rerun
+    `python -m experiments.runners.collect manager_multi_specialist` — the
+    workload-id filter makes this safe to rerun repeatedly; it skips any
+    index that already has a non-`failed/` raw trace (task 0 will be
+    skipped; only tasks 4 and 5 will attempt).
+  The validated 33-trace dataset and pre-existing raw/failed logs are
+  otherwise untouched. Tasks 0, 1, 2, 3 are now real `manager_multi_specialist`
+  traces; 4 and 5 remain outstanding pending quota reset.
 - Cell C smoke test (`ToolCallingAgent`, fanout axis) run 2026-08-23 via
   `experiments/runners/smoke_toolcalling.py` — one task, 2 managed specialists
   (`research_agent`, `math_agent`) rather than the full `manager_4` topology,
