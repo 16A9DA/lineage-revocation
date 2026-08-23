@@ -1,0 +1,135 @@
+{
+  "workload_id": "probe_toolcalling_parallelism",
+  "run_id": "probe_00_neutral",
+  "task": "Look up the height of the Eiffel Tower in meters, and separately calculate 15 percent of 2000. These two things are unrelated to each other.",
+  "root_agent": "manager_agent",
+  "run_error": "AgentGenerationError: Error while generating output:\nError code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'tool_use_failed', 'failed_generation': 'Action:\\n{\\n  \"name\": \"research_agent\",\\n  \"arguments\": {\"task\": \"Please search for and provide the height of the Eiffel Tower in meters. I need the exact measurement.\", \"additional_args\": null}\\n}\\nAction:\\n{\\n  \"name\": \"math_agent\",\\n  \"arguments\": {\"task\": \"Calculate 15 percent of 2000\", \"additional_args\": null}\\n}'}}",
+  "agents": {
+    "manager_agent": {
+      "steps": [
+        {
+          "step_type": "TaskStep",
+          "step_number": null,
+          "timing": null,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 1,
+          "timing": {
+            "start_time": 1787457240.27641,
+            "end_time": 1787457273.356877
+          },
+          "tool_calls": [],
+          "error": "Error executing request to team member 'research_agent' with arguments {'task': 'What is the height of the Eiffel Tower in meters?'}: Error while generating output:\nError code: 400 - {'error': {'message': 'failed to template request: failed to render text output: minijinja: rendering failed: raise_exception: No user query found in messages.', 'type': 'invalid_request_error'}}\nPlease try again or request to another team member"
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 2,
+          "timing": {
+            "start_time": 1787457273.3572302,
+            "end_time": 1787457520.1396859
+          },
+          "tool_calls": [],
+          "error": "Error executing request to team member 'research_agent' with arguments {'task': 'Search the web for the height of the Eiffel Tower in meters. I need the current official height measurement of the Eiffel Tower in Paris, France.'}: Error while generating output:\nError code: 400 - {'error': {'message': 'failed to template request: failed to render text output: minijinja: rendering failed: raise_exception: No user query found in messages.', 'type': 'invalid_request_error'}}\nPlease try again or request to another team member"
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 3,
+          "timing": {
+            "start_time": 1787457520.140001,
+            "end_time": 1787457576.0402508
+          },
+          "tool_calls": [],
+          "error": null
+        }
+      ]
+    },
+    "research_agent": {
+      "steps": [
+        {
+          "step_type": "TaskStep",
+          "step_number": null,
+          "timing": null,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 1,
+          "timing": {
+            "start_time": 1787457286.402588,
+            "end_time": 1787457286.624338
+          },
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 1,
+          "timing": {
+            "start_time": 1787457286.410232,
+            "end_time": 1787457298.6297312
+          },
+          "tool_calls": [
+            {
+              "name": "web_search",
+              "arguments": {
+                "query": "Eiffel Tower official height meters current 2024"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 3,
+          "timing": {
+            "start_time": 1787457298.630089,
+            "end_time": 1787457315.779566
+          },
+          "tool_calls": [
+            {
+              "name": "web_search",
+              "arguments": {
+                "query": "Eiffel Tower height in meters official 2024"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 4,
+          "timing": {
+            "start_time": 1787457315.779824,
+            "end_time": 1787457341.254518
+          },
+          "tool_calls": [
+            {
+              "name": "web_search",
+              "arguments": {
+                "query": "\"Eiffel Tower\" height meters 2024"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 5,
+          "timing": {
+            "start_time": 1787457341.2548249,
+            "end_time": 1787457520.1383328
+          },
+          "tool_calls": [],
+          "error": null
+        }
+      ]
+    },
+    "math_agent": {
+      "steps": []
+    }
+  }
+}

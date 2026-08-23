@@ -1,0 +1,5 @@
+{"event": "task_start", "task_id": "probe_00_neutral", "timestamp": 1787457240.27641}
+{"event": "tool_call", "task_id": "probe_00_neutral", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787457286.410232}
+{"event": "tool_call", "task_id": "probe_00_neutral", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787457298.630089}
+{"event": "tool_call", "task_id": "probe_00_neutral", "agent_id": "research_agent", "tool": "web_search", "timestamp": 1787457315.779824}
+{"event": "task_end", "task_id": "probe_00_neutral", "timestamp": 1787457576.0402508}

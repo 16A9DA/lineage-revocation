@@ -62,3 +62,31 @@ workloads before real-agent topology measurement is collected).
   decision on whether single-turn-only delegation is still worth collecting
   before spending real runs on it, since it wouldn't add depth/fanout data
   beyond what CodeAgent topologies already produce.
+- Parallelism capability probe run 2026-08-23 via
+  `experiments/runners/probe_toolcalling_parallelism.py` — 3 tasks using
+  *independent* facts (no research->math data dependency, unlike the smoke
+  test's task), to remove any structural reason for sequential ordering.
+  Decisive finding from `probe_00_neutral` ("Eiffel Tower height" +
+  "15 percent of 2000"): the model's raw `failed_generation` payload
+  contained two consecutive `Action:` tool-call blocks in one generation —
+  one for `research_agent`, one for `math_agent` — i.e. qwen/qwen3.6-27b
+  does attempt same-turn multi-agent calls. Groq's tool-calling endpoint
+  rejected it as malformed (`400 tool_use_failed`, "Failed to call a
+  function"), and the whole task run failed with `AgentGenerationError`
+  rather than falling back to one tool call. `probe_02_forced_multi_lookup`
+  (boiling point + sqrt(144), from the earlier run) completed but with
+  `delegation_count=0` — the manager answered both directly, including the
+  arithmetic, without invoking `math_agent` at all. `probe_01` is
+  inconclusive: killed by a local shell timeout mid-retry, not by a model or
+  provider result; not rerun (see decision below on why not).
+  **Decision: B.** Same-turn multi-agent calls are not usable with this
+  model/provider configuration. Not "never attempted" (probe_00 shows the
+  model does try) but "attempting it is worse than not delegating" — it
+  produces a hard task failure instead of either parallel execution or a
+  sequential fallback. Collecting `manager_4`/`ToolCallingAgent` traffic
+  hoping for fanout>1 would mostly collect failed runs, not data. Proceeding
+  with v2's fanout/depth collection (cells A/B, `CodeAgent`) using the
+  topology this setup actually supports: sequential delegation, fanout
+  capped by managed-agent count, no same-turn concurrency. Cell C (`manager_4`
+  `ToolCallingAgent`, n=6) stays not started; worth revisiting only if a
+  different model/provider is swapped in, not by retrying this one.

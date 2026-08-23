@@ -1,0 +1,35 @@
+{
+  "workload_id": "probe_toolcalling_parallelism",
+  "run_id": "probe_01_explicit_parallel",
+  "task": "Do these two independent tasks at the same time: (1) look up the current speed of light in kilometers per second, (2) calculate 37 multiplied by 89. Neither task depends on the other.",
+  "root_agent": "manager_agent",
+  "agents": {
+    "manager_agent": {
+      "steps": [
+        {
+          "step_type": "TaskStep",
+          "step_number": null,
+          "timing": null,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "step_type": "ActionStep",
+          "step_number": 1,
+          "timing": {
+            "start_time": 1787457063.515792,
+            "end_time": 1787457064.193596
+          },
+          "tool_calls": [],
+          "error": null
+        }
+      ]
+    },
+    "research_agent": {
+      "steps": []
+    },
+    "math_agent": {
+      "steps": []
+    }
+  }
+}
