@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 
 
-class TaskTimeout(Exception):
+class TaskTimeout(BaseException):  # not Exception: smolagents' executor swallows Exception and keeps looping
     pass
 
 
@@ -21,8 +21,9 @@ from experiments.configs.workloads import WORKLOADS
 from measurement.adapters.smolagents_adapter import adapt
 
 ROOT = Path(__file__).resolve().parents[2]
-RAW_DIR = ROOT / "artifacts" / "raw_traces"
-NORM_DIR = ROOT / "experiments" / "traces" / "normalized"
+_TAG = os.environ.get("TRACE_TAG", "")  # e.g. "haiku" keeps new runs apart from the Groq corpus
+RAW_DIR = ROOT / "artifacts" / (f"raw_traces_{_TAG}" if _TAG else "raw_traces")
+NORM_DIR = ROOT / "experiments" / "traces" / (f"normalized_{_TAG}" if _TAG else "normalized")
 
 
 class TimedWebSearchTool(WebSearchTool):
@@ -215,7 +216,7 @@ def main() -> None:
                     run_one(workload_id, topology, task, run_id, model)
                     success = True
                     break
-                except Exception as exc:
+                except (Exception, TaskTimeout) as exc:
                     attempts.append(
                         {"attempt": attempt, "run_id": run_id, "error_type": type(exc).__name__, "error": str(exc)}
                     )

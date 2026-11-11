@@ -1,0 +1,16 @@
+{"event": "task_start", "task_id": "manager_specialist_delegation_chained_2_04_1794438347", "timestamp": 1794438347.094553}
+{"event": "tool_call", "task_id": "manager_specialist_delegation_chained_2_04_1794438347", "agent_id": "leaf_research_agent", "tool": "web_search", "timestamp": 1794438418.4809642}
+{"event": "tool_call", "task_id": "manager_specialist_delegation_chained_2_04_1794438347", "agent_id": "leaf_research_agent", "tool": "web_search", "timestamp": 1794438418.4809642}
+{"event": "tool_call", "task_id": "manager_specialist_delegation_chained_2_04_1794438347", "agent_id": "leaf_research_agent", "tool": "web_search", "timestamp": 1794438419.4878201}
+{"event": "tool_call", "task_id": "manager_specialist_delegation_chained_2_04_1794438347", "agent_id": "leaf_research_agent", "tool": "web_search", "timestamp": 1794438419.4878201}
+{"event": "tool_call", "task_id": "manager_specialist_delegation_chained_2_04_1794438347", "agent_id": "leaf_research_agent", "tool": "web_search", "timestamp": 1794438421.708085}
+{"event": "tool_call", "task_id": "manager_specialist_delegation_chained_2_04_1794438347", "agent_id": "leaf_research_agent", "tool": "web_search", "timestamp": 1794438421.708085}
+{"event": "tool_call", "task_id": "manager_specialist_delegation_chained_2_04_1794438347", "agent_id": "leaf_research_agent", "tool": "web_search", "timestamp": 1794438423.884547}
+{"event": "tool_call", "task_id": "manager_specialist_delegation_chained_2_04_1794438347", "agent_id": "leaf_research_agent", "tool": "web_search", "timestamp": 1794438423.884547}
+{"event": "delegation", "task_id": "manager_specialist_delegation_chained_2_04_1794438347", "parent_agent_id": "mid_agent", "agent_id": "leaf_research_agent", "timestamp": 1794438396.730912}
+{"event": "delegation", "task_id": "manager_specialist_delegation_chained_2_04_1794438347", "parent_agent_id": "mid_agent", "agent_id": "leaf_research_agent", "timestamp": 1794438415.6413178}
+{"event": "tool_call", "task_id": "manager_specialist_delegation_chained_2_04_1794438347", "agent_id": "mid_agent", "tool": "python_interpreter", "timestamp": 1794438433.668992}
+{"event": "delegation", "task_id": "manager_specialist_delegation_chained_2_04_1794438347", "parent_agent_id": "manager_agent", "agent_id": "mid_agent", "timestamp": 1794438347.094553}
+{"event": "delegation", "task_id": "manager_specialist_delegation_chained_2_04_1794438347", "parent_agent_id": "manager_agent", "agent_id": "mid_agent", "timestamp": 1794438393.8934941}
+{"event": "tool_call", "task_id": "manager_specialist_delegation_chained_2_04_1794438347", "agent_id": "manager_agent", "tool": "python_interpreter", "timestamp": 1794438439.744302}
+{"event": "task_end", "task_id": "manager_specialist_delegation_chained_2_04_1794438347", "timestamp": 1794438443.267552}
