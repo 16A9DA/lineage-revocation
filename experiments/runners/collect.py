@@ -191,13 +191,10 @@ def main() -> None:
     only = set(sys.argv[1:]) or None  # optional workload_id allow-list
 
     model = OpenAIServerModel(
-        # gpt-oss-120b intermittently emits tool-call JSON on CodeAgent's plain
-        # code-gen turns (no tools registered there); Groq then 400s with
-        # "Tool choice is none, but model called a tool". qwen3.6-27b doesn't
-        # share that habit.
-        model_id="qwen/qwen3.6-27b",
-        api_base="https://api.groq.com/openai/v1",
-        api_key=os.environ["GROQ_API_KEY"],
+        # Haiku via Anthropic's OpenAI-compatible endpoint (low-budget runs).
+        model_id="claude-haiku-5-5",
+        api_base="https://api.anthropic.com/v1/",
+        api_key=os.environ["ANTHROPIC_API_KEY"],
         client_kwargs={"timeout": 60.0, "max_retries": 2},
     )
     signal.signal(signal.SIGALRM, _alarm)

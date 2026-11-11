@@ -100,9 +100,9 @@ def run_probe(model, task_id: str, task: str) -> None:
 
 def main() -> None:
     model = OpenAIServerModel(
-        model_id="qwen/qwen3.6-27b",
-        api_base="https://api.groq.com/openai/v1",
-        api_key=os.environ["GROQ_API_KEY"],
+        model_id="claude-haiku-5-5",
+        api_base="https://api.anthropic.com/v1/",
+        api_key=os.environ["ANTHROPIC_API_KEY"],
         client_kwargs={"timeout": 60.0, "max_retries": 2},
     )
     signal.signal(signal.SIGALRM, _alarm)
