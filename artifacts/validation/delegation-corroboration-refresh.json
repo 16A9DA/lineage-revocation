@@ -1,0 +1,637 @@
+{
+  "datasets_not_pooled": true,
+  "groq_current_34": {
+    "added_vs_original_33": [
+      "manager_multi_specialist_00_1787459909.json"
+    ],
+    "corroborated_delegation_events": 23,
+    "delegation_events": 23,
+    "events_in_failed_traces": 0,
+    "excluded": {
+      "artifacts/raw_traces/failed/*": "5 failure records, not traces",
+      "smoke/probe traces": "separate dataset"
+    },
+    "max_depth_distribution": {
+      "0": 22,
+      "1": 12
+    },
+    "missing_vs_original_33": [],
+    "per_trace": {
+      "document_technical_analysis_00_1786952651.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "document_technical_analysis_01_1786952677.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "document_technical_analysis_02_1786952708.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "document_technical_analysis_03_1786952732.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "document_technical_analysis_04_1786955532.json": {
+        "delegations": 1,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "document_technical_analysis_05_1786955768.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "manager_multi_specialist_00_1787459909.json": {
+        "delegations": 2,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "manager_multi_specialist_01_1787102900.json": {
+        "delegations": 4,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "manager_multi_specialist_02_1786970824.json": {
+        "delegations": 3,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "manager_multi_specialist_03_1786979480.json": {
+        "delegations": 2,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "manager_specialist_delegation_00_1786955770.json": {
+        "delegations": 1,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "manager_specialist_delegation_01_1787102139.json": {
+        "delegations": 2,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "manager_specialist_delegation_02_1787181325.json": {
+        "delegations": 2,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "manager_specialist_delegation_03_1787183868.json": {
+        "delegations": 2,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "manager_specialist_delegation_04_1787184297.json": {
+        "delegations": 2,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "manager_specialist_delegation_first_run_1786944911.json": {
+        "delegations": 1,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "multi_step_research_00_1786945560.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "multi_step_research_01_1786952486.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "multi_step_research_02_1787181323.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "multi_step_research_03_1786945622.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "multi_step_research_04_1786945641.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "multi_step_research_05_1786970417.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "simple_research_00_1786945498.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "simple_research_01_1786945500.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "simple_research_02_1786945502.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "simple_research_03_1786945504.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "simple_research_04_1786952483.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "simple_research_05_1786945524.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "technology_comparison_00_1786945690.json": {
+        "delegations": 1,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "technology_comparison_01_1786945739.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "technology_comparison_02_1786945784.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "technology_comparison_03_1786945828.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "technology_comparison_04_1786952524.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "technology_comparison_05_1786970418.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      }
+    },
+    "provider_model": "groq; model NOT recorded in traces (see trace-counts.json model_provenance)",
+    "source": "artifacts/raw_traces/*.json on disk now",
+    "stored_normalized_vs_fresh_event_mismatch": {},
+    "topology_errors": {},
+    "topology_scorable_traces": 34,
+    "traces_processed": 34,
+    "uncorroborated_delegation_events": 0,
+    "valid_traces": 34,
+    "validation_failures": {}
+  },
+  "groq_original_33": {
+    "corroborated_delegation_events": 21,
+    "delegation_events": 21,
+    "events_in_failed_traces": 0,
+    "excluded": {
+      "artifacts/raw_traces/failed/*": "failure records, not traces",
+      "smoke/probe traces": "separate dataset"
+    },
+    "max_depth_distribution": {
+      "0": 22,
+      "1": 11
+    },
+    "per_trace": {
+      "document_technical_analysis_00_1786952651.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "document_technical_analysis_01_1786952677.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "document_technical_analysis_02_1786952708.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "document_technical_analysis_03_1786952732.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "document_technical_analysis_04_1786955532.json": {
+        "delegations": 1,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "document_technical_analysis_05_1786955768.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "manager_multi_specialist_01_1787102900.json": {
+        "delegations": 4,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "manager_multi_specialist_02_1786970824.json": {
+        "delegations": 3,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "manager_multi_specialist_03_1786979480.json": {
+        "delegations": 2,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "manager_specialist_delegation_00_1786955770.json": {
+        "delegations": 1,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "manager_specialist_delegation_01_1787102139.json": {
+        "delegations": 2,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "manager_specialist_delegation_02_1787181325.json": {
+        "delegations": 2,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "manager_specialist_delegation_03_1787183868.json": {
+        "delegations": 2,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "manager_specialist_delegation_04_1787184297.json": {
+        "delegations": 2,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "manager_specialist_delegation_first_run_1786944911.json": {
+        "delegations": 1,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "multi_step_research_00_1786945560.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "multi_step_research_01_1786952486.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "multi_step_research_02_1787181323.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "multi_step_research_03_1786945622.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "multi_step_research_04_1786945641.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "multi_step_research_05_1786970417.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "simple_research_00_1786945498.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "simple_research_01_1786945500.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "simple_research_02_1786945502.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "simple_research_03_1786945504.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "simple_research_04_1786952483.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "simple_research_05_1786945524.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "technology_comparison_00_1786945690.json": {
+        "delegations": 1,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "technology_comparison_01_1786945739.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "technology_comparison_02_1786945784.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "technology_comparison_03_1786945828.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "technology_comparison_04_1786952524.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      },
+      "technology_comparison_05_1786970418.json": {
+        "delegations": 0,
+        "distinct_children": 0,
+        "fanout": [],
+        "max_depth": 0
+      }
+    },
+    "provider_model": "groq; model NOT recorded in traces (see trace-counts.json model_provenance)",
+    "source": "files tracked under artifacts/raw_traces/ at git commit 0a69575; run with CURRENT adapter",
+    "stored_normalized_vs_fresh_event_mismatch": {},
+    "topology_errors": {},
+    "topology_scorable_traces": 33,
+    "traces_processed": 33,
+    "uncorroborated_delegation_events": 0,
+    "valid_traces": 33,
+    "validation_failures": {}
+  },
+  "haiku_12": {
+    "corroborated_delegation_events": 36,
+    "delegation_events": 36,
+    "events_in_failed_traces": 0,
+    "excluded": {
+      "none": "no failure records, no exclusions"
+    },
+    "max_depth_distribution": {
+      "1": 6,
+      "2": 5
+    },
+    "per_trace": {
+      "forced_multi_lookup_00_1794438518.json": {
+        "delegations": 2,
+        "distinct_children": 2,
+        "fanout": [
+          2
+        ],
+        "max_depth": 1
+      },
+      "forced_multi_lookup_01_1794438574.json": {
+        "delegations": 3,
+        "distinct_children": 2,
+        "fanout": [
+          2
+        ],
+        "max_depth": 1
+      },
+      "forced_multi_lookup_02_1794438647.json": {
+        "delegations": 1,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "forced_multi_lookup_03_1794438682.json": {
+        "delegations": 4,
+        "distinct_children": 2,
+        "fanout": [
+          2
+        ],
+        "max_depth": 1
+      },
+      "forced_multi_lookup_04_1794438749.json": {
+        "delegations": 2,
+        "distinct_children": 2,
+        "fanout": [
+          2
+        ],
+        "max_depth": 1
+      },
+      "forced_multi_lookup_05_1794438787.json": {
+        "delegations": 2,
+        "distinct_children": 1,
+        "fanout": [
+          1
+        ],
+        "max_depth": 1
+      },
+      "manager_specialist_delegation_chained_2_00_1794425687.json": {
+        "delegations": 3,
+        "distinct_children": 2,
+        "fanout": [
+          1,
+          1
+        ],
+        "max_depth": 2
+      },
+      "manager_specialist_delegation_chained_2_01_1794426221.json": {
+        "delegations": 5,
+        "distinct_children": 2,
+        "fanout": [
+          1,
+          1
+        ],
+        "max_depth": 2
+      },
+      "manager_specialist_delegation_chained_2_02_1794426465.json": {
+        "delegations": 2,
+        "topology_error": "task manager_specialist_delegation_chained_2_02_1794426465: expected exactly one root agent, found ['leaf_research_agent', 'manager_agent']"
+      },
+      "manager_specialist_delegation_chained_2_03_1794428137.json": {
+        "delegations": 5,
+        "distinct_children": 2,
+        "fanout": [
+          1,
+          1
+        ],
+        "max_depth": 2
+      },
+      "manager_specialist_delegation_chained_2_04_1794438347.json": {
+        "delegations": 4,
+        "distinct_children": 2,
+        "fanout": [
+          1,
+          1
+        ],
+        "max_depth": 2
+      },
+      "manager_specialist_delegation_chained_2_05_1794438443.json": {
+        "delegations": 3,
+        "distinct_children": 2,
+        "fanout": [
+          1,
+          1
+        ],
+        "max_depth": 2
+      }
+    },
+    "provider_model": "anthropic OpenAI-compatible endpoint, claude-haiku-5-5",
+    "source": "artifacts/raw_traces_haiku/*.json",
+    "stored_normalized_vs_fresh_event_mismatch": {},
+    "topology_errors": {
+      "manager_specialist_delegation_chained_2_02_1794426465.json": "TopologyError: task manager_specialist_delegation_chained_2_02_1794426465: expected exactly one root agent, found ['leaf_research_agent', 'manager_agent']"
+    },
+    "topology_scorable_traces": 11,
+    "traces_processed": 12,
+    "uncorroborated_delegation_events": 0,
+    "valid_traces": 12,
+    "validation_failures": {}
+  },
+  "historical_33_reproduction": {
+    "matches_stored": true,
+    "recomputed_now": {
+      "events": 21,
+      "traces": 33
+    },
+    "stored": {
+      "events": 21,
+      "traces": 33
+    }
+  },
+  "method": "measurement.adapters.smolagents_adapter.adapt over each raw trace; corroborated = child agent has timed activity"
+}

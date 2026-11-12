@@ -1,0 +1,380 @@
+{
+  "groq": {
+    "by_condition": {
+      "manager_1/unaudited": 18,
+      "manager_2/unaudited": 4,
+      "solo/none": 12
+    },
+    "by_topology": {
+      "manager_1": 18,
+      "manager_2": 4,
+      "solo": 12
+    },
+    "by_workload": {
+      "document_technical_analysis": {
+        "condition": "manager_1/unaudited",
+        "duplicate_indices": {},
+        "elicitation": "unaudited",
+        "expected_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "failed_records": {},
+        "framework": "smolagents (CodeAgent manager)",
+        "missing_indices": [],
+        "present_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "raw_trace_files": 6,
+        "retry_after_failure_indices": [],
+        "task_mismatches": [],
+        "topology": "manager_1",
+        "unindexed_first_run_files": []
+      },
+      "manager_multi_specialist": {
+        "condition": "manager_2/unaudited",
+        "duplicate_indices": {},
+        "elicitation": "unaudited (prompt asks lookup then compute)",
+        "expected_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "failed_records": {
+          "0": [
+            "manager_multi_specialist_00_1787458499.json"
+          ],
+          "4": [
+            "manager_multi_specialist_04_1787458503.json",
+            "manager_multi_specialist_04_1787461492.json"
+          ],
+          "5": [
+            "manager_multi_specialist_05_1787458507.json"
+          ]
+        },
+        "framework": "smolagents (CodeAgent manager)",
+        "missing_indices": [
+          4,
+          5
+        ],
+        "present_indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "raw_trace_files": 4,
+        "retry_after_failure_indices": [
+          0
+        ],
+        "task_mismatches": [],
+        "topology": "manager_2",
+        "unindexed_first_run_files": []
+      },
+      "manager_specialist_delegation": {
+        "condition": "manager_1/unaudited",
+        "duplicate_indices": {},
+        "elicitation": "unaudited",
+        "expected_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "failed_records": {
+          "3": [
+            "manager_specialist_delegation_03_1787181894.json"
+          ]
+        },
+        "framework": "smolagents (CodeAgent manager)",
+        "missing_indices": [
+          5
+        ],
+        "present_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "raw_trace_files": 6,
+        "retry_after_failure_indices": [
+          3
+        ],
+        "task_mismatches": [
+          "manager_specialist_delegation_first_run_1786944911.json: task text not in current workloads.py"
+        ],
+        "topology": "manager_1",
+        "unindexed_first_run_files": [
+          "manager_specialist_delegation_first_run_1786944911.json"
+        ]
+      },
+      "multi_step_research": {
+        "condition": "solo/none",
+        "duplicate_indices": {},
+        "elicitation": "none (solo, no managed agents)",
+        "expected_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "failed_records": {},
+        "framework": "smolagents (ToolCallingAgent solo)",
+        "missing_indices": [],
+        "present_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "raw_trace_files": 6,
+        "retry_after_failure_indices": [],
+        "task_mismatches": [],
+        "topology": "solo",
+        "unindexed_first_run_files": []
+      },
+      "simple_research": {
+        "condition": "solo/none",
+        "duplicate_indices": {},
+        "elicitation": "none (solo, no managed agents)",
+        "expected_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "failed_records": {},
+        "framework": "smolagents (ToolCallingAgent solo)",
+        "missing_indices": [],
+        "present_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "raw_trace_files": 6,
+        "retry_after_failure_indices": [],
+        "task_mismatches": [],
+        "topology": "solo",
+        "unindexed_first_run_files": []
+      },
+      "technology_comparison": {
+        "condition": "manager_1/unaudited",
+        "duplicate_indices": {},
+        "elicitation": "unaudited",
+        "expected_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "failed_records": {},
+        "framework": "smolagents (CodeAgent manager)",
+        "missing_indices": [],
+        "present_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "raw_trace_files": 6,
+        "retry_after_failure_indices": [],
+        "task_mismatches": [],
+        "topology": "manager_1",
+        "unindexed_first_run_files": []
+      }
+    },
+    "documented_exclusions": [
+      {
+        "count": 5,
+        "reason": "attempts exhausted with provider errors; not traces; kept as evidence",
+        "what": "failed/ records"
+      },
+      {
+        "count": 2,
+        "reason": "NOT excluded; duration-only flag (API-wait stall lower bounds)",
+        "traces": [
+          "document_technical_analysis_03_1786952732",
+          "manager_multi_specialist_02_1786970824"
+        ],
+        "what": "stall_annotations.json"
+      }
+    ],
+    "failed_attempt_reasons": {
+      "AgentGenerationError: Connection error.": 9,
+      "AgentGenerationError: Error code: 400 - {'error': {'message': 'Tool choice is none": 2,
+      "AgentGenerationError: Error code: 429 - {'error': {'message': 'Rate limit reached ": 1,
+      "AgentGenerationError: task exceeded wall-clock budget": 3
+    },
+    "failed_records": 5,
+    "failed_records_invalid_json": {},
+    "model": "NOT RECORDED IN TRACES; see model_provenance",
+    "model_provenance": {
+      "collected_relative_to_swap_commit": {
+        "collected_after_swap_commit (consistent with qwen/qwen3.6-27b)": 1,
+        "collected_before_swap_commit (model unverified)": 33
+      },
+      "collector_model_after_swap": "qwen/qwen3.6-27b (collect.py at 58cd04b..0089e5d)",
+      "collector_model_before_swap": "openai/gpt-oss-120b (collect.py at 87f188d, 42076b9, 9e6f44e)",
+      "first_runner_model": "llama-3.3-70b-versatile (groq_manager_research.py at 7726f33)",
+      "note": "Commit time is not collection time. Trace epoch vs swap epoch is a bound, not proof.",
+      "swap_commit_58cd04b_epoch": 1787186734
+    },
+    "normalized_invalid_jsonl": {},
+    "normalized_trace_files": 34,
+    "normalized_valid_jsonl": 34,
+    "normalized_without_raw": [],
+    "paths": {
+      "failed": "artifacts/raw_traces/failed",
+      "norm": "experiments/traces/normalized",
+      "raw": "artifacts/raw_traces"
+    },
+    "provider": "groq",
+    "raw_invalid_json": {},
+    "raw_trace_files": 34,
+    "raw_valid_json": 34,
+    "raw_without_normalized": [],
+    "sha256_normalized_dir_files": "e22eab07bda84b6fa5eebb96ea595f819d8cbb3f9fa0c87a0ef0c39411d71925",
+    "sha256_raw_dir_files": "cd01eeba1c609bdaa1f793b72e532b7e73923b05be67d234caf81f7c55d0747d",
+    "unparsable_filenames": []
+  },
+  "haiku": {
+    "by_condition": {
+      "chained_2/elicited-by-topology": 6,
+      "manager_4/elicited-by-prompt": 6
+    },
+    "by_topology": {
+      "chained_2": 6,
+      "manager_4": 6
+    },
+    "by_workload": {
+      "forced_multi_lookup": {
+        "condition": "manager_4/elicited-by-prompt",
+        "duplicate_indices": {},
+        "elicitation": "elicited-by-prompt (prompt spells out lookup/convert/combine steps)",
+        "expected_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "failed_records": {},
+        "framework": "smolagents (CodeAgent manager)",
+        "missing_indices": [],
+        "present_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "raw_trace_files": 6,
+        "retry_after_failure_indices": [],
+        "task_mismatches": [],
+        "topology": "manager_4",
+        "unindexed_first_run_files": []
+      },
+      "manager_specialist_delegation_chained_2": {
+        "condition": "chained_2/elicited-by-topology",
+        "duplicate_indices": {},
+        "elicitation": "elicited-by-topology (manager's only agent is mid; mid's only agent is leaf)",
+        "expected_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "failed_records": {},
+        "framework": "smolagents (CodeAgent manager)",
+        "missing_indices": [],
+        "present_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "raw_trace_files": 6,
+        "retry_after_failure_indices": [],
+        "task_mismatches": [],
+        "topology": "chained_2",
+        "unindexed_first_run_files": []
+      }
+    },
+    "documented_exclusions": [
+      {
+        "count": 0,
+        "reason": "attempts exhausted with provider errors; not traces; kept as evidence",
+        "what": "failed/ records"
+      }
+    ],
+    "failed_attempt_reasons": {},
+    "failed_records": 0,
+    "failed_records_invalid_json": {},
+    "model": "claude-haiku-5-5",
+    "normalized_invalid_jsonl": {},
+    "normalized_trace_files": 12,
+    "normalized_valid_jsonl": 12,
+    "normalized_without_raw": [],
+    "paths": {
+      "failed": "artifacts/raw_traces_haiku/failed",
+      "norm": "experiments/traces/normalized_haiku",
+      "raw": "artifacts/raw_traces_haiku"
+    },
+    "provider": "anthropic (OpenAI-compatible endpoint)",
+    "raw_invalid_json": {},
+    "raw_trace_files": 12,
+    "raw_valid_json": 12,
+    "raw_without_normalized": [],
+    "sha256_normalized_dir_files": "3dfb0a4cd0c04fac6ed7894ad4e11c18b3561eff00354ab757d49b740ccb5ca0",
+    "sha256_raw_dir_files": "9cf1b419767629441a309a0f31d2481668d10e870ffe206517a21d987887c6c5",
+    "unparsable_filenames": []
+  },
+  "smoke": {
+    "files": [
+      "probe_00_neutral.json",
+      "probe_01_explicit_parallel.json",
+      "probe_02_forced_multi_lookup.json",
+      "smoke_toolcalling_manager2spec_00.json"
+    ],
+    "normalized_jsonl_files": 4,
+    "normalized_valid_jsonl": 4,
+    "note": "probe/smoke runs; excluded from both corpora; provider/model not recorded in files",
+    "path": "experiments/traces/smoke",
+    "raw_json_files": 4,
+    "raw_valid_json": 4
+  }
+}
