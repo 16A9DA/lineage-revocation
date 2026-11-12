@@ -32,7 +32,7 @@ Authoritative sources (hashes and provenance in `docs/frozen/PROVENANCE.md`):
 
 ### 0.2 Decision register
 
-Status column: "ruling relayed" = approved by the supervisor, text as relayed; "label only" = relayed as an item name without ruling text, so this document records no content beyond the label.
+Status column: "ruling relayed" = approved by the supervisor, text as relayed in the task statements. Rulings 7, 10, 13 and 14 were relayed in full and are recorded in full. Implementation questions that no ruling answers are listed in section 11 and are not decisions.
 
 | # | decision | status | where |
 |---|---|---|---|
@@ -42,14 +42,14 @@ Status column: "ruling relayed" = approved by the supervisor, text as relayed; "
 | 4 | domain separation: external AAD for the **artifact only**; nodes and statements keep empty AAD | ruling relayed. The AAD byte string is not supplied and is fixed test-first | 5.1.4 |
 | 5 | equal version accepted idempotently after authentication and freshness; lower rejected; higher authenticated then accepted | ruling relayed | 5.2 |
 | 6 | equal version with different signed content: SHA-256 digest detection, **reject and alert** | ruling relayed | 5.2.4 |
-| 7 | unavailable-status policy for the six situations: **fail-closed** supersedes the bounded-staleness default; bounded-staleness stays an alternative for S2 and S6 and a measured benchmark arm | ruling relayed for the default and supersession. **Per-situation outcome text beyond that was not supplied (label only)** | 5.4 |
+| 7 | unavailable-status policy for the six situations: `None` routes to the unavailable policy; explicit TTL-only no-status mode; one policy function with distinct reason codes; mandatory alert on S5; **fail-closed default**; bounded-staleness over the last authenticated artifact as the configured alternative and a benchmark arm; fail-open experimental only | ruling relayed in full (5.4) | 5.4 |
 | 8 | high-water-mark persisted after authentication and before the freshness check | ruling relayed | 5.2.5 |
 | 9 | API option **P-2 approved**; `status_artifact=` compatibility retained | ruling relayed | 6.2 |
-| 10 | per-node expiry `now < expires_at` for every node | principle and "approved decisions" relayed. **Sub-rulings (nesting, `issued_at`, issuance refusal, error identity) not supplied (label only)** | 5.3 |
+| 10 | per-node expiry `now < expires_at` for every node; no verification-time nesting; no `issued_at`/not-before check in this revision; no issuance-time refusal; optional non-normative warning in `create_child_node`; error carries the node id through a compatible subclass | ruling relayed in full (5.3) | 5.3 |
 | 11 | K-axis representative cells (2,2), (5,4), (20,1) | ruling relayed | 8.1 |
 | 12 | K statements built as a decoy forest under the same root | ruling relayed | 8.1 |
-| 13 | steady-state, cold-start and GC measurement conditions | relayed. Wording not supplied; section 8.2 states the conditions as relayed in the earlier task statement | 8.2 |
-| 14 | conformance plan and the test 20 fixture correction | relayed. Wording not supplied; the plan is 7.2 and the fixture correction is the per-node `expires_at` fixture noted in 7.1 row 20 | 7 |
+| 13 | measurement: GC-disabled steady state is primary; cold-start and GC-enabled are separate labelled conditions, never mixed | ruling relayed in full (8.2) | 8.2 |
+| 14 | conformance: the approved section 7.2 test list is preserved; 11a (network outage) and 11b (unreadable store) stay distinct; test 20 uses distinct `expires_at` values per node | ruling relayed in full (7) | 7 |
 | 15 | four evidence-collection authorizations and their conditions | ruling relayed as stated in the earlier task statement; each paid run still needs its stated go-ahead | Appendix A |
 | 16 | audience attenuation: child audience is a subset of parent audience; leaf check is membership of the requested resource | ruling relayed | 5.5 |
 | 17 | staleness boundary: stale when `now >= min(valid_until, issued_at + max_staleness)` | ruling relayed | 5.2.5 |
@@ -81,7 +81,7 @@ Contradictions that remain in the frozen texts (Spec governs; Design is the appr
 - Spec §5 lists protected headers `alg`, `kid` and a content-type identifier; the code writes `alg` only. Not ruled; see D14.
 - Spec §13 `remember_highest` runs before `status.expired`; Spec §12 says "persist ... before serving authorization decisions based on that version". Consistent with ruling 8.
 
-Provenance gaps that remain: the Design approval letter is not in the repository (recorded from the supervisor's statement). The supervisor's signature on the Spec is not independently verified. The text of rulings 7 (per-situation), 10 (sub-rulings), 13 and 14 was not supplied.
+Provenance gaps that remain: the Design approval letter is not in the repository (recorded from the supervisor's statement), and the supervisor's signature on the Spec is not independently verified.
 
 ## 1. Executive summary
 
@@ -99,7 +99,7 @@ Motivating finding (VERIFIED by running unmodified code, 4.2): a forged unsigned
 
 Implementation sequence (`docs/design-revision-1-implementation-plan.md`): **F, then A, then C, then audience attenuation, then B**. Tests first. F precedes A because F changes node bodies and so changes every fixture node id. **B never precedes A.**
 
-Rulings whose text was supplied only as a label (7 per-situation, 10 sub-rulings, 13, 14) are marked in 0.2; this document adds no content to them.
+Rulings 7, 10, 13 and 14 are recorded in full (5.4, 5.3, 8.2, 7); open implementation questions are listed in section 11.
 
 ## 2. Motivation and scope
 
@@ -117,7 +117,7 @@ Relationship to the existing documents:
 | D1 | `StatusArtifact` (`status.py`) has `version, root_revocation_state_uri, issued_at, valid_until, statements`. No signature, no serializer. `accept_status_artifact` never authenticates the artifact | Spec §13 `verify_status_artifact(status, trust)`; Design §9 step 7; Design §9.1 `verify_status_signature(status, trust_anchor)`; Design §8.1 | A |
 | D2 | `accept_status_artifact` rejects `artifact.version <= highest_seen` | Spec §13 `if status.version < highest_seen(uri)`; Spec §12 rollback row "rejects lower versions"; Design §9.1 `if status.version < highest` | B |
 | D3 | `authorize` checks only `lineage[-1].body.expires_at` | Spec §18 test 20 says "Expired leaf credential". Per-node expiry is an **AMENDMENT** (ruling 10) | C |
-| D4 | no fetch and no `handle_unavailable_status`. With `status_artifact=None`, `authorize` skips revocation checking and can return success; `test_valid_chain_authorizes` asserts that success | Spec §13 routes missing or unfetchable status to `handle_unavailable_status`; Design §11 "not implicit allow"; fail-closed default per ruling 7 | A (policy) |
+| D4 | no fetch and no `handle_unavailable_status`. With `status_artifact=None`, `authorize` silently skips revocation checking and can return success (removed by ruling 7); `test_valid_chain_authorizes` asserts that success | Spec §13 routes missing or unfetchable status to `handle_unavailable_status`; Design §11 "not implicit allow"; fail-closed default per ruling 7 | A (policy) |
 | D5 | invalid statements: `_logger.warning(...)` only | Spec §11 and §13: log the failure and "emit an alert/metric". Ruling 18: structured alert log plus a monotonic counter | A |
 | D6 | `NodeBody.revocation_trust_anchor` is opaque `bytes`, compared for equality with the root's value; never used as a key. Statement verification uses the caller-supplied `root_trust_anchor: COSEKey` | Spec §7: read it from the root node; a descendant copy "is treated only as a consistency value". Spec §3: "COSE key identifier/material". Ruling 2: Option K | A |
 | D7 | the mark is saved after the freshness check passes | Spec §13 runs `remember_highest` before the staleness check. Ruling 8: persist after authentication and before freshness | B |
@@ -136,10 +136,10 @@ Relationship to the existing documents:
 
 **Dispositions (rulings relayed; the approved rulings are the supervisor's, the implementation notes are mine):**
 
-- **D14, COSE tagging.** The implementation MUST conform to tagged COSE_Sign1. The tag wraps the envelope, not the `Sig_structure`, so node ids (a hash of the body) and signatures over the body are **unaffected**; only the wire bytes change. The parser is **strict and tagged-only**: an untagged array is rejected. Whether to add the `kid` and content-type protected headers is not ruled; if they are added they change the signed protected bytes and therefore every signature (**OPEN**, to be settled with the supervisor before F starts).
+- **D14, COSE tagging.** The implementation MUST conform to tagged COSE_Sign1. The tag wraps the envelope, not the `Sig_structure`, so node ids (a hash of the body) and signatures over the body are **unaffected**; only the wire bytes change. The parser is **strict and tagged-only**: an untagged array is rejected. DR-1 adds **no protected-header requirement** beyond what the supervisor ruled: the ruling covers the tag only. The Spec §5 table text lists protected headers `alg`, `kid` and a content-type identifier and the code writes `alg` only; that is recorded as an observation, not as a requirement of this revision. Any change to protected headers would change every signature and is not part of D14.
 - **D15, audience.** `audience` becomes an array. Attenuation adds: each child's audience MUST be a subset of its parent's. The leaf check becomes: the requested resource is a member of the leaf's audience. A change to the node body, so node ids change.
-- **D16, delegation rights.** Use a `delegation_rights` map. Frozen semantics are retained: the single recognized key carries the boolean. Unknown keys are rejected. The frozen root and direct-issuer revocation scope (Spec §9) is not changed. The name of the recognized key is **not supplied** and is fixed test-first. A change to the node body, so node ids change.
-- **D17, statement identifiers and wire form.** `revocation_id` is SHA-256 over the canonical unsigned statement body, mirroring `node_id`. The statement serializer uses the node-shaped COSE_Sign1 envelope. Belongs to Revision A. **Consequence (VERIFIED from `RevocationStatement._unsigned_cbor_dict`):** that dict currently contains `revocation_id`, so a hash over it would be circular. The body whose hash defines `revocation_id` must therefore exclude `revocation_id` itself (as `NodeBody` has no `node_id` field). To be confirmed test-first; it changes the statement's signed bytes.
+- **D16, delegation rights.** Use a `delegation_rights` map. Frozen semantics are retained: the single recognized key carries the boolean. Unknown keys are rejected. The frozen root and direct-issuer revocation scope (Spec §9) is not changed. The name of the recognized key was **not supplied by the supervisor and is not invented here**; it is fixed with the supervisor before F starts. A change to the node body, so node ids change.
+- **D17, statement identifiers and wire form.** `revocation_id` is SHA-256 over the canonical unsigned statement body, mirroring `node_id`. The statement serializer uses the node-shaped COSE_Sign1 envelope. Belongs to Revision A. **Implementation note (VERIFIED from `RevocationStatement._unsigned_cbor_dict`):** that dict currently contains `revocation_id`. The "canonical unsigned statement body" that `revocation_id` hashes must therefore not include `revocation_id` itself, as `NodeBody` has no `node_id` field and `node_id` hashes the unsigned body. The self-exclusion follows from the ruling's definition ("SHA-256 over the canonical unsigned statement body"); it changes the statement's signed bytes, which is the implementation task's concern.
 - **D18, artifact signature.** Revision A restores a requirement already present in the frozen design. It is **not** a newly invented protocol requirement.
 - **D19, HTTP API.** Deferred prototype scaffolding. Non-blocking, not a protocol divergence. The in-process benchmark phases do not require it. Revisit only if real-socket network conditions are to be measured.
 
@@ -292,7 +292,12 @@ Three distinct situations:
 
 **5.3.1 Requirement (ruling relayed).** For every node `N_i` in the lineage, `now < N_i.expires_at`. If any node fails, the whole lineage is rejected. A child MUST NOT remain usable after any ancestor expires.
 
-**5.3.2 Details (PROPOSED). The supervisor's per-node expiry sub-rulings were relayed as a label only; if the ruling text differs from the following, the ruling text governs.** Evaluate after lineage authentication (an expiry on an unauthenticated node must not be trusted) and before status processing. Boundary: `now >= expires_at` is expired (the existing leaf rule). The failure SHOULD identify the node; the existing `CredentialExpired(expires_at, now)` has no node field, and any change must keep `pytest.raises(CredentialExpired)` sites working. **OPEN, not ruled:** (a) whether a child's `expires_at` must also be `<=` its parent's at verification; (b) whether `now >= issued_at` must hold for each node; (c) whether `create_child_node` should refuse a child that outlives its parent. Spec §18 test 20 remains true and is subsumed. After Revision C, chain-minimum expiry is the frozen verifier's own behavior (8.4).
+**5.3.2 Details (ruling relayed in full).** Evaluate after lineage authentication (an expiry on an unauthenticated node must not be trusted) and before status processing. Boundary: `now >= expires_at` is expired (the existing leaf rule).
+- **No verification-time nesting:** the verifier does not additionally require a child's `expires_at` to be `<=` its parent's. The per-node check already denies a child once any ancestor has expired.
+- **No `issued_at` / not-before check in this revision.**
+- **No issuance-time refusal:** `create_child_node` does not refuse a child that outlives its parent. An **optional, non-normative warning** in `create_child_node` is permitted.
+- **Error identity:** the failure carries the offending node id through a **compatible subclass** of `CredentialExpired`, so existing `pytest.raises(CredentialExpired)` sites keep working.
+Spec §18 test 20 remains true and is subsumed. After Revision C, chain-minimum expiry is the frozen verifier's own behavior (8.4).
 
 ### 5.4 Unavailable-status behavior (ruling 7: fail-closed)
 
@@ -307,13 +312,32 @@ The code lets `authorize(status_artifact=None)` skip revocation checking and ret
 | S5. artifact signature invalid | not applicable (no signature) | Spec §13 `handle_unavailable_status(now)`; Design §9.1 `DENY("untrusted revocation state")` | evidence of tampering or misconfiguration |
 | S6. artifact stale | raises `StaleStatusArtifact` | Spec §13 `handle_stale_status(now)`; Design §9 step 9 "configured fail-closed or bounded-staleness policy" | **authenticated** evidence of an older state |
 
-**AMENDMENT (ruling 7).** **Fail-closed supersedes the original bounded-staleness default.** The Spec §12 table says "Default prototype policy: Bounded-staleness; fail-closed is a separate experimental condition" (FROZEN). The supervisor ruled that fail-closed is now the default. This is a recorded, supervisor-approved supersession of that Spec default, not an implementation convenience.
+**AMENDMENT (ruling 7).** **Fail-closed supersedes the original bounded-staleness default.** The Spec §12 table says "Default prototype policy: Bounded-staleness; fail-closed is a separate experimental condition" (FROZEN). The supervisor ruled that fail-closed is now the default. This is a recorded, supervisor-approved supersession of that Spec default.
 
-*Why.* Bounded staleness needs previously authenticated evidence: a retained authenticated artifact and its age. In S1, S4 and S5 no authenticated evidence exists, so "stale but within bound" has no meaning. S3 weakens rollback protection, not freshness. Fail-closed is defined in all six situations; bounded-staleness is not.
+*Why.* Bounded staleness needs previously authenticated evidence: a retained authenticated artifact and its age. Where none exists (S1, S4, S5) "stale but within bound" has no meaning. Fail-closed is defined in all six situations; bounded-staleness is not.
 
-*What remains.* Bounded-staleness stays an **alternative for S2 and S6** and a **measured benchmark arm** (Design §11 requires at least two verifier policies to be implemented and measured; Spec §12 names fail-closed as the experimental condition). Fail-open remains "experimental only" (Design §11).
+**Approved behavior per situation (ruling 7, relayed in full):**
 
-*Not supplied.* The per-situation outcome text beyond the fail-closed default was relayed as a label only. In particular, how S1 is treated, given that `test_valid_chain_authorizes` currently expects success with no artifact, and whether any explicit "no-status" mode exists for the TTL-only baseline (8.4), is **OPEN** and must be settled with the supervisor before the tests for Revision A are written.
+| situation | approved behavior |
+|---|---|
+| **S1** no artifact (`status_artifact=None`) | **The silent skip is removed.** `None` routes to the unavailable-status policy. Under the fail-closed default the request is rejected. The TTL-only baseline is reachable only through the **explicit no-status mode** below, never by omitting the argument |
+| **S2** status service or network unavailable | handled by the **one policy function** shared with S4 and S5, with a **distinct reason code** |
+| **S3** high-water-mark store unreadable or corrupt | **fails closed**. A **missing** file is a first run, not a failure |
+| **S4** artifact malformed | one policy function, distinct reason code |
+| **S5** artifact signature invalid | one policy function, distinct reason code, and a **mandatory alert** |
+| **S6** stale authenticated evidence | this is where **bounded staleness applies**: it is the configured alternative, evaluated over the **last authenticated artifact** |
+
+*Policies.*
+- **Default: fail-closed.**
+- **Bounded-staleness** over the last authenticated artifact is the **configured alternative** and a **measured benchmark arm** (Design §11 requires at least two verifier policies to be implemented and measured).
+- **Fail-open** exists only as an **experimental baseline** (Design §11: "experimental only").
+
+**`status_artifact=None` (normative).**
+1. `None` MUST route through the unavailable-status policy. It never skips revocation checking.
+2. The default behavior is **fail-closed**.
+3. A TTL-only **no-status mode** requires an **explicit, deliberately named opt-in**. **Omission never enables no-status mode.**
+4. The exact name and shape of the opt-in are not supplied and are fixed test-first. Consequence: `test_valid_chain_authorizes`, which today expects success with no artifact, must be migrated to the explicit opt-in or to a supplied artifact (a test change for the implementation task, not made here).
+5. For the benchmark, the chain-minimum TTL baseline (8.4) uses the explicit no-status mode.
 
 ### 5.5 Audience attenuation (ruling 16, D15)
 
@@ -492,7 +516,7 @@ Note on where the cost lands (VERIFIED, `is_target_revoked` in `revocation.py`):
 - **Per-refresh axis (ruling relayed):** artifact ingestion, artifact-signature verification and the statement checks performed during ingestion are timed separately.
 - **Worst case (ruling relayed):** the earlier condition, a fresh artifact version for every call, is kept and labelled `worst_case_fresh_version`. It is not the primary result.
 - **Timing (ruling relayed):** time individual `authorize()` calls (`time.perf_counter_ns`) and preserve per-call sample vectors where practical; do not hide tail behavior in batches when individual timing is feasible. If timer resolution forces batching for a cell, record the batch size and say that tail statistics for that cell are over batches. **PROPOSED:** measure timer overhead and report it.
-- **Cold start and garbage collection (ruling 13, relayed; wording not supplied).** As relayed in the earlier task statement: retain **warmup**, **cold-start subprocess measurements**, **`perf_counter_ns()`**, **garbage-collection controls** and **bootstrap confidence intervals**. Conditions are reported separately and never mixed: steady-state (warmed, repeated calls over one ingested artifact), cold start (a fresh subprocess, first call), and the GC control used for each (GC-disabled inside the timed region, as CBD-v1 had; whether a GC-enabled arm is also reported is not stated in what I received).
+- **Measurement conditions (ruling 13, relayed in full).** **GC-disabled steady state is the primary condition** (warmed, repeated calls over one ingested artifact, GC disabled inside the timed region). **Cold start** (a fresh subprocess, first call) and **GC-enabled** runs are **separate, labelled conditions and are never mixed** with the primary condition or with each other. Warmup, `perf_counter_ns()` and bootstrap confidence intervals are retained.
 - Components timed through public functions; p50, p95, p99 and a bootstrap interval; warmup 200 calls and 30 repetitions as in CBD-v1 (PROPOSED there, not ruled).
 
 ### 8.3 Cost metrics
@@ -507,7 +531,7 @@ Chain-minimum TTL is the primary baseline; T-active is the primary renewal model
 
 **OPEN (not ruled):** revocation statements target a `node_id`; a re-issued node has a new id, so a statement naming the old id does not match it. How the pull design treats renewal is not defined in the text I can read.
 
-**Consequence of Revision C (PROPOSED):** once implemented, the frozen verifier itself enforces chain-minimum expiry, so the baseline need not be a harness-side check, provided a no-artifact path of `authorize` survives. Under the approved fail-closed default (5.4) the treatment of a missing artifact (S1) is OPEN; if it becomes a failure, the TTL baseline needs a documented entry point, which is also OPEN.
+**Consequence of Revision C (PROPOSED):** once implemented, the frozen verifier itself enforces chain-minimum expiry. The TTL-only baseline uses the **explicit no-status mode** of 5.4 (never reached by omitting the artifact).
 
 ### 8.5 Interaction of A, B, C with the benchmark API (PROPOSED)
 
@@ -541,20 +565,18 @@ ruling relayed: commit metadata, raw results and summaries; use Git LFS if raw a
 
 ## 11. Risks and unresolved questions
 
-Still open (nothing below is approved):
+Still open (implementation questions, **not** approved decisions; rulings 7, 10, 13 and 14 are now recorded in full):
 
-1. Text of the supervisor's rulings was not supplied for: per-situation outcomes under 7 (including S1, `status_artifact=None`, and any no-status mode); the per-node expiry sub-rulings (10: parent/child nesting, `issued_at`, issuance refusal, error identity); 13 and 14 as written.
-2. Whether the `kid` and content-type protected headers are added with the tag (D14); it changes every signature.
-3. The name of the recognized `delegation_rights` key (D16); the artifact AAD byte string and the `schema_version` value (5.1.3, 5.1.4).
+1. The name of the recognized `delegation_rights` key (D16): not supplied by the supervisor and not invented.
+2. The exact name and shape of the explicit TTL-only no-status opt-in (5.4); the reason-code names; the alert log field set and counter name (5.6).
+3. The `schema_version` value and the artifact AAD byte string (5.1.3, 5.1.4).
 4. Artifact key rotation and compromise recovery (5.1.5); who holds the dedicated key beyond "not the distribution service" (5.1.6).
-5. D17 circularity: `revocation_id` must be excluded from the body that its hash covers.
-6. Handling of a digest-less legacy store entry on an equal version (5.2.4).
-7. Alert log field set and counter name (5.6).
-8. Whether a GC-enabled measurement arm is reported (8.2); the handling of depth-1 targets in the 50/50 signer mix (8.1); the decoy forest shape.
-9. Renewal and revocation (8.4): a re-issued node has a new id, so a statement naming the old id does not match.
-10. Provenance: the Design approval letter is not in the repository; the Spec signature is not independently verified; the author of DR-0001's decision is unknown.
+5. Handling of a digest-less legacy store entry on an equal version (5.2.4).
+6. The decoy forest shape, and the handling of depth-1 targets in the 50/50 signer mix (8.1).
+7. Renewal and revocation (8.4): a re-issued node has a new id, so a statement naming the old id does not match.
+8. Provenance: the Design approval letter is not in the repository; the Spec signature is not independently verified; the author of DR-0001's decision is unknown.
 
-Risks: B before A would weaken the protocol (5.2.7), so the sequence forbids it; F changes every fixture node id and must be done first; P-2 and statement serialization add trusted code in a frozen module; at `K=1000` and depth 20 artifact size and ingestion cost are large (no number exists); a missing-file high-water store is indistinguishable from a first run (S3); fail-closed with no status (S1) will change `test_valid_chain_authorizes`; single machine, no real network, so absolute numbers will not transfer.
+Risks: B before A would weaken the protocol (5.2.7), so the sequence forbids it; F changes every fixture node id and must be done first; P-2 and statement serialization add trusted code in a frozen module; at `K=1000` and depth 20 artifact size and ingestion cost are large (no number exists); a missing-file high-water store is indistinguishable from a first run (S3); fail-closed `None` handling (S1) means `test_valid_chain_authorizes` must be migrated in the implementation task; single machine, no real network, so absolute numbers will not transfer.
 
 ## 12. Implementation acceptance criteria (for a later, authorized implementation)
 
@@ -574,7 +596,7 @@ DR-1 is satisfied only when:
 
 ## 13. Approval record and sign-off
 
-This table records what the supervisor approved, as relayed in the task statements of 2026-11-12. It matches the register in 0.2 one for one. The supervisor's response column carries the relay, **not a signature**. Where only the label of a ruling was relayed, the row says so.
+This table records what the supervisor approved, as relayed in the task statements of 2026-11-12. It matches the register in 0.2 one for one. The supervisor's response column carries the relay, **not a signature**. Rulings 7, 10, 13 and 14 were relayed in full and are recorded as such.
 
 | # | decision | recorded ruling | supervisor response (relayed) | notes |
 |---|---|---|---|---|
@@ -584,14 +606,14 @@ This table records what the supervisor approved, as relayed in the task statemen
 | 4 | Domain separation (5.1.4) | artifact-only external AAD | Approved (ruling relayed) | AAD bytes fixed test-first |
 | 5 | Equal-version idempotency (5.2) | accept after authentication and freshness | Approved (ruling relayed) |  |
 | 6 | Equal-version equivocation (5.2.4) | SHA-256 digest, reject and alert | Approved (ruling relayed) | legacy-entry handling open |
-| 7 | Unavailable-status policy (5.4) | fail-closed default; bounded-staleness alternative for S2/S6 and a benchmark arm | Approved for the default and supersession (ruling relayed); per-situation text label only | S1 treatment open; supersedes the Spec §12 default |
+| 7 | Unavailable-status policy (5.4) | fail-closed default; `None` routes to the policy; explicit no-status opt-in, never by omission; one policy function with distinct reason codes (S2, S4, S5), mandatory alert on S5; S3 fails closed, missing file is first run; bounded-staleness over the last authenticated artifact (S6) as the alternative and a benchmark arm; fail-open experimental only | Approved (ruling relayed in full) | supersedes the Spec §12 default; opt-in name fixed test-first |
 | 8 | Persistence ordering (5.2.5) | after authentication, before freshness | Approved (ruling relayed) |  |
 | 9 | API design (6.2) | P-2 with `status_artifact=` compatibility | Approved (ruling relayed) |  |
-| 10 | Per-node expiry (5.3) | `now < expires_at` for every node | Approved; sub-rulings label only | 5.3.2 is proposal until text supplied |
+| 10 | Per-node expiry (5.3) | `now < expires_at` for every node; no verification-time nesting; no `issued_at` check this revision; no issuance-time refusal; optional non-normative warning in `create_child_node`; node id in the error via a compatible subclass | Approved (ruling relayed in full) | |
 | 11 | K-axis cells (8.1) | (2,2), (5,4), (20,1) | Approved (ruling relayed) |  |
 | 12 | K-axis construction (8.1) | decoy forest under the same root | Approved (ruling relayed) | shape and depth-1 signer handling fixed test-first |
-| 13 | Cold-start and GC (8.2) | as relayed earlier | Approved; wording not supplied | GC-enabled arm not stated |
-| 14 | Conformance plan and test 20 fixture (7) | plan 7.2; distinct `expires_at` per node | Approved; wording not supplied |  |
+| 13 | Measurement conditions (8.2) | GC-disabled steady state primary; cold-start and GC-enabled separate labelled conditions, never mixed | Approved (ruling relayed in full) | |
+| 14 | Conformance plan and test 20 fixture (7) | approved 7.2 test list preserved; 11a and 11b distinct; test 20 uses distinct `expires_at` per node | Approved (ruling relayed in full) | |
 | 15 | Evidence tasks (Appendix A) | four tasks with their conditions | Approved as relayed | each paid run needs its go-ahead |
 | 16 | Audience attenuation (5.5) | child subset of parent; leaf membership | Approved (ruling relayed) |  |
 | 17 | Staleness boundary (5.2.5) | `now >= min(valid_until, issued_at + max_staleness)` | Approved (ruling relayed) | code already matches |
@@ -601,10 +623,10 @@ This table records what the supervisor approved, as relayed in the task statemen
 | 21 | Frozen documents restored (`docs/frozen/`) | byte-for-byte, hashes recorded | Done | Spec identity confirmed by the supervisor; no signature verified |
 | 22 | `status._demo()` and DR-0001 | migrate with B; decision record | Approved (ruling relayed); record created | `docs/decisions/DR-0001.md` |
 | 23 | Canonical CBOR tests (5.1.7) | property-based; escalate on failure | Approved (ruling relayed) |  |
-| D14 | COSE tagging | tagged, envelope tag, strict parser | Approved (ruling relayed) | `kid`/content-type open |
+| D14 | COSE tagging | tagged, tag wraps the envelope, strict tagged-only parser | Approved (ruling relayed) | no protected-header requirement added |
 | D15 | Audience arrays | arrays, subset, membership | Approved (ruling relayed) |  |
-| D16 | Delegation rights | map; single key; reject unknown | Approved (ruling relayed) | key name not supplied |
-| D17 | Statement id and wire form | SHA-256 of body; node-shaped envelope; Revision A | Approved (ruling relayed) | circularity note |
+| D16 | Delegation rights | `delegation_rights` map; single recognized key carries the boolean; reject unknown keys | Approved (ruling relayed) | key name not supplied, not invented |
+| D17 | Statement id and wire form | `revocation_id` = SHA-256 of the canonical unsigned statement body; node-shaped envelope; Revision A | Approved (ruling relayed) | self-exclusion follows from the definition |
 | D18 | Artifact signature provenance | restores a frozen requirement | Approved (ruling relayed) |  |
 | D19 | HTTP API | deferred, non-blocking | Approved (ruling relayed) |  |
 

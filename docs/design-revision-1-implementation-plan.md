@@ -23,21 +23,26 @@ Then conformance (re-evaluate all 21 Spec §18 rows) and, separately authorized,
 - **Tests first.** For every step, write the approved tests (DR-1 7.2, per the approved conformance plan) and see them fail before the change. No existing test is weakened.
 - **Canonical encoding is validated.** Property-based CBOR tests (ruling 23) run in step A. If canonical encoding fails them, stop and escalate to the supervisor; do not substitute another encoder or relax the byte comparison.
 
-## Phase 1. Open items to settle before the dependent step starts
+## Phase 1. Implementation questions to settle before the dependent step starts
 
-Nothing implementation-related starts in this phase. Each item blocks only the step named. The supervisor's ruling text for these was relayed as a label only or not at all (DR-1 section 11).
+Nothing implementation-related starts in this phase. These are **implementation questions, not approved decisions**; each blocks only the step named. Rulings 7, 10, 13 and 14 are recorded in full in DR-1 (5.4, 5.3, 8.2, 7) and are no longer open.
 
 | item | blocks | question |
 |---|---|---|
-| per-situation unavailable-status outcomes (ruling 7), in particular S1 `status_artifact=None` | A (tests for rejection paths) | what `authorize` does with no artifact under fail-closed, given that `test_valid_chain_authorizes` currently expects success; whether any explicit no-status mode exists for the TTL-only baseline |
-| per-node expiry sub-rulings (ruling 10) | C | parent/child nesting, `issued_at` check, issuance refusal, error identity |
-| `kid` and content-type protected headers (D14) | F | added with the tag or not (it changes every signature) |
-| `delegation_rights` key name (D16) | F | the single recognized key |
-| `schema_version` value, artifact AAD bytes | A | fixed test-first, confirm with the supervisor |
-| D17 circularity | A | confirm that `revocation_id` is excluded from the body its hash covers |
-| digest-less legacy store entry on an equal version | B | record the digest on first sight or reject |
+| `delegation_rights` key name (D16) | F | the supervisor did not supply it; it is not invented here |
+| name and shape of the explicit TTL-only no-status opt-in; reason-code names | A | fixed test-first with the supervisor |
+| `schema_version` value, artifact AAD bytes | A | fixed test-first |
 | alert log field set, counter name (ruling 18) | A | confirm |
 | artifact key rotation and compromise recovery | A (documentation) | not addressed by any text |
+| digest-less legacy store entry on an equal version | B | record the digest on first sight or reject |
+
+## Normative `status_artifact=None` behavior (ruling 7; applies from step A)
+
+1. `None` routes through the unavailable-status policy. The silent skip is removed.
+2. The default is fail-closed.
+3. A TTL-only no-status mode requires an explicit, deliberately named opt-in. Omission never enables it.
+4. S2, S4 and S5 use one policy function with distinct reason codes; S5 raises a mandatory alert; S3 (unreadable or corrupt store) fails closed and a missing file is a first run; S6 is where bounded staleness over the last authenticated artifact applies, as the configured alternative and a benchmark arm; fail-open exists only as an experimental baseline.
+5. Test impact: `test_valid_chain_authorizes` must be migrated to the explicit opt-in or to a supplied artifact. Written first, in the implementation task.
 
 ## Phase 2. F: spec-shape conformance
 
@@ -57,7 +62,7 @@ Nothing implementation-related starts in this phase. Each item blocks only the s
 | Tests first | `schema_version` required; unsigned, wrong-signer and omission (statement removed) artifacts rejected; forged higher version and forged `10**12` version leave the store byte-identical; other-URI validly signed artifact rejected; descendant-supplied anchor never used; Option K decoded strictly; artifact-only AAD (node and statement signatures do not verify as artifact signatures); decode, canonical re-encode and byte-compare check; malformed artifacts give typed failures with no side effect; `status_store_path=None` typed failure; `revocation_id` equals SHA-256 of the unsigned statement body; structured alert and counter; **property-based CBOR tests with the escalation rule**; end-to-end omission scenario of DR-1 4.2 |
 | Tests to modify | the seven `StatusArtifact(...)` call sites in `tests/test_leaf_status_redirect.py` (`test_revoked_intermediary_denies_whole_subtree`, `test_status_artifact_cannot_be_bypassed_with_wrong_uri`, `test_status_artifact_rollback_denied`, `test_status_artifact_rollback_persists_across_restart`, `test_stale_status_artifact_denied`) must build signed artifacts; fixtures that put a placeholder `revocation_trust_anchor` in a test that ingests an artifact need a real serialized COSE_Key |
 | Verification order (DR-1 5.1.7) | strict parse and keep received bytes, canonical check, structural validation, optional early URI check, authenticate under the Option K anchor with artifact-only AAD over the exact body bytes, use fields only from verified bytes, URI binding check after verification (repeating any early check), then rollback, persistence before freshness, freshness, statements. No persistent state mutation before authentication succeeds |
-| Expected behavior | fail-closed on any parse or authentication failure; mark never advanced by an unauthenticated artifact |
+| Expected behavior | fail-closed on any parse or authentication failure; `None` routes to the unavailable policy (see above); S5 raises a mandatory alert; mark never advanced by an unauthenticated artifact |
 | Security acceptance | the DR-1 4.2 scenarios are rejected with the store byte-identical; the artifact key is distinct from delegation and statement keys in every test setup; the distribution service is never modelled as a key holder |
 | Regression risks | every artifact-using test breaks until migrated; statement signed bytes change (D17); the persistence point moves before the freshness check; `StaleStatusArtifact` reused for rollback and staleness |
 
@@ -66,9 +71,9 @@ Nothing implementation-related starts in this phase. Each item blocks only the s
 | field | content |
 |---|---|
 | Files likely affected | `src/lineage_revocation/verifier.py` (`authorize`, `CredentialExpired`); tests in `tests/test_leaf_status_redirect.py` or a **NEW (name TBD)** module |
-| Tests first | expired root, expired intermediate with a valid leaf, child outliving its parent, every node position and the boundary `now == expires_at`, all-valid lineage, node id in the error, expiry checked before status ingestion; **the test 20 fixture correction (ruling 14): distinct `expires_at` per node** |
+| Tests first | expired root, expired intermediate with a valid leaf, child outliving its parent, every node position and the boundary `now == expires_at`, all-valid lineage, node id in the error through a compatible `CredentialExpired` subclass, expiry checked before status ingestion; **test 20 uses distinct `expires_at` values per node (ruling 14)** |
 | Tests to modify | none. `test_expired_leaf_denied` keeps passing; its fixture shares one expiry, so it does not discriminate leaf-only from per-node behavior |
-| Expected behavior | every node satisfies `now < expires_at` after lineage authentication and before status processing; any failure rejects the whole lineage; sub-rulings per Phase 1 |
+| Expected behavior | every node satisfies `now < expires_at` after lineage authentication and before status processing; any failure rejects the whole lineage; **no verification-time nesting, no `issued_at`/not-before check, no issuance-time refusal** (ruling 10); an optional non-normative warning in `create_child_node` is permitted |
 | Security acceptance | the temporal amplification lineage (child outliving parent) is denied after the parent expires; no store write for an expired lineage |
 | Regression risks | failure order changes (expiry before status); `CredentialExpired` compatibility with `pytest.raises` |
 
@@ -107,7 +112,7 @@ Nothing implementation-related starts in this phase. Each item blocks only the s
 | Authorized by | Phases 2 to 7 complete with the protocol correctness gates passing, plus a separate supervisor authorization |
 | Order | (1) topology generation, topology validation and the structural oracle first; (2) timing and cost measurements only after correctness is established |
 | Files likely affected | **NEW (name TBD)**: harness under `experiments/controlled/` (proposed by CBD-v1; the directory does not exist); results under `artifacts/controlled/<experiment_id>/` |
-| Scope | 23 cells (21 grid plus depth spur {10, 20} at fanout 1); `K ∈ {1,10,100,1000}` on (2,2), (5,4), (20,1); **decoy forest** under the same root, disjoint from measured chains, sized to K, depth-stratified, effective revocations, oracle covering all K, seeded 50/50 signer mix, policy recorded in metadata and per row; per-call timing vectors; paths `per_request`, `per_refresh`, `worst_case_fresh_version`, `cold_start`; fail-closed default with bounded-staleness as a measured arm; chain-minimum TTL baseline, T-active, T-full, L = R, seeded exposure phase sweeps; schema version 2 with the exposure-phase field |
+| Scope | 23 cells (21 grid plus depth spur {10, 20} at fanout 1); `K ∈ {1,10,100,1000}` on (2,2), (5,4), (20,1); **decoy forest** under the same root, disjoint from measured chains, sized to K, depth-stratified, effective revocations, oracle covering all K, seeded 50/50 signer mix, policy recorded in metadata and per row; per-call timing vectors; paths `per_request`, `per_refresh`, `worst_case_fresh_version`, `cold_start`; fail-closed default with bounded-staleness over the last authenticated artifact as a measured arm and the explicit no-status mode for the TTL baseline; GC-disabled steady state primary, cold-start and GC-enabled as separate labelled conditions never mixed; chain-minimum TTL baseline, T-active, T-full, L = R, seeded exposure phase sweeps; schema version 2 with the exposure-phase field |
 | What it measures | legitimate artifact ingestion and statement verification; not malformed-input handling |
 | Regression risks | timer overhead and I/O warm-up noise; large artifacts at K=1000, depth 20 (Git LFS for raw data if large); no controlled row is ever read by `measurement/`; the HTTP API (D19) is not needed for in-process runs |
 
