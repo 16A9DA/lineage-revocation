@@ -1,8 +1,21 @@
 # Design Revision 1 (DR-1)
 
-Status: **FINAL TEXT FOR SIGNATURE (DR-1 v1).** Date: 2026-11-12. Author: Rayyan Ahmed (drafted with AI assistance).
+Status: **FINAL TEXT FOR SIGNATURE (DR-1 v1).** Date: 2026-11-12 (text); implementation-status block updated 2026-11-15. Author: Rayyan Ahmed (drafted with AI assistance).
 The supervisor has approved DR-1 Draft 2 and the remaining design decisions (relayed in the task statements of 2026-11-12). **The supervisor's signature itself is not recorded in this file; the signature block in section 13 is blank.** Nothing here is a verified signature.
-`src/lineage_revocation/` is frozen and unchanged. No implementation, no new tests and no benchmark code exist. Every behavior described as "after DR-1" is a specification of intent, **not implemented and not tested**. Implementation starts only under `docs/design-revision-1-implementation-plan.md`.
+**Implementation status, as of 2026-11-15 (this block supersedes the drafting-time statements in sections 1 to 6 that the source is frozen and that nothing is implemented).** The drafting-time text of sections 3 to 6 describes the code as it was on 2026-11-12 ("today") and the intended behavior ("after DR-1"). Those passages are kept as written because they are the historical record of the divergences; where they say "not implemented", read this block. The implementation sequence is `docs/design-revision-1-implementation-plan.md`.
+
+| item | state | where |
+|---|---|---|
+| F: tagged COSE_Sign1, audience array, `delegation_rights` map | implemented and committed | `f8e60dc`, `tests/test_revision_f.py` |
+| D20: RFC 8949 deterministic encoder (`docs/decisions/DR-0002.md`) | implemented and committed | `56ddc12`, `tests/test_canonical_encoder.py` |
+| A: signed status artifacts, Option K anchor, artifact-only AAD, key separation, unavailable-status policy, alerts, D17 identifiers, artifact-integrity and per-statement classification, policy-independent artifact rejection and policy-governed request verdict (5.6, `docs/decisions/DR-0003.md`) | implemented and committed; supervisor rulings are still pending, listed in `docs/decisions/DR-0003.md` section 4 (known risks and limitations are in this document, section 11) | `ec750bb`, `tests/test_revision_a.py`; conformance rows in 7.4 |
+| C: per-node expiry, and moving the expiry check before status processing | not implemented; expiry currently follows status (6.2.1), explicitly deferred to Revision C | |
+| Audience attenuation (child audience subset of parent) | not implemented | |
+| B: equal-version idempotency, digest equivocation, `status._demo()` migration | not committed. At `ec750bb` an equal version is rejected as a rollback and `status._demo()` is a stub that raises `NotImplementedError` until this revision lands | |
+| Status-service ingestion layer (D19) | not implemented; deferred. Service-side obligations in 5.6 are stated, not enforced anywhere in this repository | |
+| Spec §18 conformance | not complete: row 11a (network outage) has no defined or implemented behavior | 7.4 |
+
+The signature block in section 13 is still blank; nothing here is a verified signature. The frozen Spec and Design documents are unchanged. A proposed reissue text is in `docs/proposed-spec-reissue.md` (not part of the frozen documents).
 
 ## 0. How to read this document
 
@@ -60,6 +73,10 @@ Status column: "ruling relayed" = approved by the supervisor, text as relayed in
 | 22 | migrate `status._demo()` with Revision B; DR-0001 citation corrected to a decision record | ruling relayed; record created | `docs/decisions/DR-0001.md` |
 | 23 | property-based CBOR tests; escalate to the supervisor if canonical encoding fails | ruling relayed | 5.1.7 |
 | D14 to D19 | divergence rulings | ruling relayed | section 3 |
+| D20 | deterministic encoding: conform to RFC 8949 section 4.2.1 with a protocol-owned encoder | ruling relayed (escalation under ruling 23) | section 3; `docs/decisions/DR-0002.md` |
+| 24 | statement defect classification (Revision A): wire-malformed statements (including signature member presence, type and length) and conflicting duplicates reject the whole artifact; semantic failures are ignored per statement; artifact rejection is policy-independent, the request verdict is policy-governed; fail-open is experimental-arm only with distinct telemetry | ruling relayed (final) | 5.6; `docs/decisions/DR-0003.md` |
+| 25 | D21: Design §7.2 `scope` field absent from Spec §8; implementation follows the Spec | recorded, awaiting ruling | 3 |
+| 26 | D22: `target_node.issuer == statement.revoker` (Spec §9) not implemented; authority is derived from node ids and keys | recorded, awaiting ruling | 3 |
 
 Benchmark rulings relayed and retained unchanged: depth-as-analogy; original 21-cell grid; deterministic topology generation; structural revocation oracle; sibling isolation; chain-only depth spur (depth 10 and 20, fanout 1); `K ∈ {1,10,100,1000}`; steady-state per-request primary path; ingestion on a separate per-refresh axis; fresh-version-per-call kept as a labelled worst case; individual-call timing with per-call vectors where practical; cold-start and GC retained; chain-minimum TTL primary; T-active primary and T-full upper bound; TTL values 30 s, 1 min, 5 min, 15 min, 1 h; `L = R`; seeded exposure-phase sweeps; leaf-only expiry documented once as a historical vulnerability and not used as the baseline; node-id renewal cascade as an experimental question; JSONL schema and layout retained plus an exposure-phase field; commit metadata, raw results and summaries, Git LFS if large.
 
@@ -133,6 +150,9 @@ Relationship to the existing documents:
 | D17 | `revocation_id` is a caller-supplied `bytes` field inside the signed statement body; no statement wire encoding | Spec §8: `revocation_id` "content-derived from statement body"; `signature` is "COSE_Sign1" | A |
 | D18 | artifact has no signature | the signature requirement is already in the frozen design (Design §8.1, §9 step 7, §9.1; Spec §13 and the §22 checklist line "Revocation artifact: signed statements (Option A)") | A restores it |
 | D19 | library only; no HTTP endpoints | Spec §16 lists `POST /delegations`, `POST /revocations`, `GET /status/{root-id}`, `POST /authorize`, `GET /metrics` | **DEFERRED, non-blocking, not a protocol divergence** |
+| D20 | `encode_canonical` is `cbor2.dumps(..., canonical=True)`, which orders map keys length-first (RFC 7049 section 3.9). `{"a": 1, 1000: 2}` encodes with `"a"` first | Spec §4: RFC 8949 core deterministic encoding (section 4.2.1: keys ordered by the bytewise order of their complete encodings; `1000` (`19 03 e8`) sorts before `"a"` (`61 61`)) | **conform**; ahead of F and A. Record: `docs/decisions/DR-0002.md` |
+| D21 | Spec §8 defines the statement fields without a `scope`; the implementation has none. A revocation always applies to the target node and, through lineage checking, to every credential whose authenticated lineage contains it | Design §7.2 lists a `scope` field: "At minimum: target node plus all valid descendants that depend on it." Spec §8 (which governs) has no such field, and no Spec text reintroduces it | **recorded, not ruled** (supervisor). Spec §8 governs and the implementation follows it |
+| D22 | `target_node.issuer` is a text label that is serialized in the signed node body and **never read for any decision** (`nodes.py:66,84` only). A direct-issuer revocation is authorized by structure instead: `check_revocation_statement` requires `statement.revoker == parent.node_id` for the target's parent in the verified `target_lineage` and verifies the signature under that parent's `subject` key (Spec §9 key rule). `revoker` is a node id (`bytes`); `issuer` is free text, so the two cannot be compared directly | Spec §9: "The verifier or ingestion validator checks target_node.issuer == statement.revoker for direct-child revocation." Spec §8: `revoker` is the "Identity of signer issuing the revocation." The frozen text defines no mapping between a node's `issuer` string and a `revoker` identity | **recorded, not ruled.** The literal check is **not implemented**. The authority it protects (only the target's direct issuer or the root may revoke) is enforced by node-id and key derivation. What is not enforced: that a node's `issuer` label names its actual issuer; tests use arbitrary labels (a child created by the root carries `issuer="root"`, one created by `a` carries `"a"`) and the verifier would accept a label that lies. Whether the label must be checked, and against what identity format, needs a ruling |
 
 **Dispositions (rulings relayed; the approved rulings are the supervisor's, the implementation notes are mine):**
 
@@ -140,8 +160,13 @@ Relationship to the existing documents:
 - **D15, audience.** `audience` becomes an array. Attenuation adds: each child's audience MUST be a subset of its parent's. The leaf check becomes: the requested resource is a member of the leaf's audience. A change to the node body, so node ids change.
 - **D16, delegation rights.** Use a `delegation_rights` map. Frozen semantics are retained: the single recognized key carries the boolean. Unknown keys are rejected. The frozen root and direct-issuer revocation scope (Spec §9) is not changed. The name of the recognized key was **not supplied by the supervisor and is not invented here**; it is fixed with the supervisor before F starts. A change to the node body, so node ids change.
 - **D17, statement identifiers and wire form.** `revocation_id` is SHA-256 over the canonical unsigned statement body, mirroring `node_id`. The statement serializer uses the node-shaped COSE_Sign1 envelope. Belongs to Revision A. **Implementation note (VERIFIED from `RevocationStatement._unsigned_cbor_dict`):** that dict currently contains `revocation_id`. The "canonical unsigned statement body" that `revocation_id` hashes must therefore not include `revocation_id` itself, as `NodeBody` has no `node_id` field and `node_id` hashes the unsigned body. The self-exclusion follows from the ruling's definition ("SHA-256 over the canonical unsigned statement body"); it changes the statement's signed bytes, which is the implementation task's concern.
+- **D17 addendum (rulings relayed; reasoning in `docs/decisions/DR-0003.md`).** Verifiers recompute `revocation_id` as SHA-256 over the canonical unsigned statement body and never trust the wire value. The wire field stays (frozen Spec §8) as a reference whose presence and equality are checked; absence or mismatch is a wire-malformed defect (5.6). Identical bodies deduplicate and are logged; different valid signatures over one body are the same semantic revocation. The same recomputed id with a different body is an artifact-integrity defect (5.6).
+- **Artifact-key separation scope (ruling relayed; DR-0003).** The artifact key must differ from the root key, every lineage subject key and every statement-signing key, compared by canonical encoded key bytes. The requirement lives at key generation; the verifier check is detection, and a match is alerted.
 - **D18, artifact signature.** Revision A restores a requirement already present in the frozen design. It is **not** a newly invented protocol requirement.
 - **D19, HTTP API.** Deferred prototype scaffolding. Non-blocking, not a protocol divergence. The in-process benchmark phases do not require it. Revisit only if real-socket network conditions are to be measured.
+- **D20, deterministic encoding.** Implementation divergence, not a reason to amend the frozen Spec. Disposition: conform. A protocol-owned encoder in `src/lineage_revocation/canonical.py` replaces reliance on cbor2 `canonical=True`: recursive, keys sorted by the bytewise order of each complete encoded key, definite lengths only, shortest-form integers, no floats, unsupported types rejected, no tags except COSE_Sign1 tag 18. **Domain restriction is input validation; canonical correctness comes from the encoder.** Over the current protocol objects (text-keyed bodies, small-label COSE maps) the two orderings coincide, so existing bytes, node ids and signatures do not change (a differential test records this; it is not the conformance oracle). Ruling 23 property tests are retargeted at the new encoder.
+- **D21, statement `scope`.** Design §7.2 lists `scope`; Spec §8 does not, and the Spec governs. Not ruled by the supervisor; recorded here. Revocation reach is determined by authenticated lineage membership, so the minimum scope the Design names ("target node plus all valid descendants") is the behavior, but it is not a statement field and cannot be narrowed or widened per statement.
+- **D22, `target_node.issuer == statement.revoker`.** Recorded accurately: the check is **not implemented**; `issuer` is never read. Direct-issuer authority is established by `revoker == parent.node_id` plus verification under the parent's subject key, which is the Spec §9 key rule ("MUST verify under the COSE public key in the subject field of the target node's parent"). The gap is that a node's `issuer` label is unchecked content. It does not let a non-issuer revoke (the key derivation prevents that); it means the label cannot be relied on as evidence of who issued a node. Disposition requires a supervisor ruling.
 
 No test in `tests/` asserts equal-version rejection; only `status._demo()` does. The rollback tests use strictly lower versions (`test_status_artifact_rollback_denied`: 2 then 1; `test_status_artifact_rollback_persists_across_restart`: 5 then 3).
 
@@ -343,9 +368,39 @@ The code lets `authorize(status_artifact=None)` skip revocation checking and ret
 
 `audience` is an array (Spec §3). Attenuation adds: for every child, the child's audience MUST be a subset of its parent's audience. A violation is an authority amplification (denied, as for `authority`). The leaf check becomes: the requested resource is a **member** of the leaf's audience array. Spec §13 has `audience_allows(chain, request)` and `attenuated(chain)`; the Spec does not define per-node audience semantics, so this is an AMENDMENT. Changes the node body (node ids change).
 
-### 5.6 Invalid statements: alert and metric (ruling 18)
+### 5.6 Invalid statements: classification, alert and metric (ruling 18 and the final Revision A ruling)
 
-Spec §11 requires an invalid statement to be treated as absent, logged, and to emit "an alert/metric". The approved form: a **structured alert log record plus a monotonic metrics counter**. The log field set and the counter name are not supplied (**PROPOSED**: include the revocation id, target node id and failure reason). An invalid statement never causes denial by itself (Spec §9, §11).
+**Normative dividing principle (to be carried into the next Spec reissue; see `docs/proposed-spec-reissue.md`):**
+
+> The verifier escalates to artifact-level rejection exactly those defects that the ingestion contract obliges the service to reject and that the verifier can detect without any authorization semantics.
+
+Two categories, never conflated:
+
+| category | defects | verifier behavior | reason code | alert kind |
+|---|---|---|---|---|
+| **artifact integrity** (wire-malformed) | malformed CBOR or invalid wire structure; missing required fields (`reason_code` is optional, as in frozen Spec §8); incorrect field types; **a received statement payload that is not the exact canonical encoding of its own content, including a non-canonical node envelope embedded in it**; **missing, wrongly typed, or not-64-byte (Ed25519) signature member**; missing `revocation_id`; `revocation_id` different from the recomputed SHA-256; conflicting duplicates (same recomputed id, different unsigned body) | **reject the entire signed artifact**; no persistent mutation; route through the unavailable-status policy (fail-closed by default; bounded-staleness fallback to the last authenticated artifact if configured) | `StatusReason.ARTIFACT_INTEGRITY` | `artifact_integrity`, with a `defect` field (`malformed_wire`, `signature_malformed`, `revocation_id_missing`, `revocation_id_mismatch`, `conflicting_duplicate`) |
+| **per-statement semantic** | a correctly formed (64-byte) signature that fails verification under the key derived through Spec §9; revoker unauthorized or outside its scope; target id or lineage mismatch; invalid target lineage | **ignore that statement**, log, alert, continue with the others (frozen Spec §11); the artifact stays usable | `StatementReason` (`SIGNATURE_INVALID`, `REVOKER_UNAUTHORIZED`, `TARGET_ID_MISMATCH`, `TARGET_LINEAGE_MISMATCH`, `LINEAGE_INVALID`) | `invalid_revocation_statement`, with a `reason_code` field |
+
+*Dividing rule for signatures (final ruling).* A defect that is **detectable without consulting a key is wire-malformed; a defect that requires the key is semantic.** A missing signature member, a signature member of the wrong type, and an Ed25519 signature whose length is not 64 bytes are detectable from the bytes alone (the pinned algorithm fixes the length), so they are artifact-integrity defects. A 64-byte signature that fails verification under the authorized key is a semantic failure, as is an unauthorized revoker. (A tagged envelope that is not a four-element array, including one with no signature member at all, is refused earlier by the strict decoder and is reported with defect `malformed_wire`.) *Exact reconstruction.* A statement's signature is verified over its canonical reconstruction, and the strict decoder sees embedded node envelopes only as opaque byte strings, so the parser also requires the received payload to equal that reconstruction; any difference is `malformed_wire`. *Unusable keys.* Key material that cannot verify anything (for example a lineage node whose subject key is not 32 bytes) is a failed verification: a per-statement semantic failure (`LINEAGE_INVALID`) inside a statement, and a typed lineage failure in a presented lineage. It never raises an untyped exception.
+
+*Artifact rejection is invariant across policies; the request verdict is policy-governed.* These are two separate stages.
+
+1. **Artifact disposition (policy-independent).** Under every policy, including the experimental fail-open arm, an artifact with an integrity defect is rejected: its statements are not processed, its contents are not used for authorization, the high-water mark does not advance, it cannot replace the accepted artifact, and nothing is persisted. Rejection happens before the verdict stage and before any persistence, so no policy can reach the failed artifact.
+2. **Request verdict (policy-governed).** `FAIL_CLOSED` denies the request. `BOUNDED_STALENESS` uses the last authenticated artifact only while it remains fresh; its revocations keep applying; the rejected artifact is never used. `FAIL_OPEN_EXPERIMENTAL` may allow the request when no usable authenticated state exists (and uses a fresh last authenticated state when one exists, rather than discarding known revocations). `TTL_ONLY_NO_STATUS` excuses only an absent artifact.
+
+*Standing rule for `FAIL_OPEN_EXPERIMENTAL`.* It exists only inside an explicitly labelled experimental benchmark arm and is never a production policy or configuration option. The implementation refuses it unless an `experimental_arm` label is supplied (`ValueError` otherwise); the label is written to its telemetry. **The label is a benchmark label and a guard against accidental use, not a cryptographic or production-enforcement boundary**; fail-open stays unavailable as a production policy by rule, not because the label enforces it. It never overrides an unreadable store (S3), artifact-key reuse, or a rollback.
+
+*Fail-open telemetry.* Two findings are distinct from every status reason so a benchmark can separate the outcomes: `fail_open_after_status_unavailable` (any non-integrity status failure, with the underlying `reason_code`) and `fail_open_after_artifact_integrity`. Each is an alert kind with its own counter and carries `finding`, `reason_code`, `experimental_arm` and `authenticated_state_used`. A fallback to a last authenticated artifact is reported as `status_fallback_last_authenticated`, once per request and only after the state is confirmed bound to the root; its `policy` field distinguishes a bounded-staleness fallback from fail-open using authenticated state.
+
+*Scope of the signature-length ruling.* It concerns revocation statements only. A wrong-length signature on the artifact's outer envelope is unchanged: it is reported as an artifact signature failure (S5, mandatory alert). The statement rule is not extended to the outer envelope without a ruling.
+
+*Why the first category rejects the whole artifact.* Spec §11 ignores invalid statements because statements could be injected by unauthorized parties, so rejecting an artifact over them would be a denial-of-service vector. A wire-malformed statement is different in kind. After Revision A only the revocation authority can produce a signed artifact, so a malformed or conflicting statement inside one is evidence of an authority fault or compromise, the same category as equivocation, and gets the same policy: reject plus alert through the unavailable-status path. Detecting these defects needs no authorization semantics: the ingestion contract (Spec §10: well-formedness, COSE structure, required fields and types, duplicate `revocation_id`) already obliges the status service to reject them, and the verifier re-checks because the service is trusted only for availability.
+
+*Why the second category is ignored per statement.* Deciding that a signature is invalid or a revoker unauthorized needs the §9 key derivation and scope rules, which are authorization semantics. Statement authors are delegators, not the artifact authority; one delegator's garbage must not take down the revocation feed.
+
+*Scope of enforcement.* **No status-service ingestion layer exists in this repository** (D19, deferred). Only the verifier-side check is implemented and tested. The service-side obligation is stated in the proposed Spec text and is not enforced anywhere here.
+
+Telemetry (ruling 18): each alert is a structured log record (logger `lineage_revocation.alerts`; attributes `alert_kind` and `alert_fields`) plus a monotonic counter per kind. Integrity and semantic alerts use different kinds and reason namespaces. The field set and names are implementation choices, not fixed by the Spec. An invalid statement never causes denial by itself (Spec §9, §11).
 
 ### 5.7 Revoked revokers (ruling 19)
 
@@ -396,6 +451,24 @@ Reasons recorded: P-2 separates refresh cost from per-request authorization cost
 - **Authentication is not inherited.** Only the exact artifact the state is bound to is covered by its authentication; a different artifact must be authenticated again (5.2.3).
 
 *What the state does not decide.* It does not fix the serialization, the anchor representation, the key ownership, the domain separation or the unavailable-status policy; each stays with its own ruling. The state may carry a non-canonical or partially processed view (for example a statement index) only for lookup, never as a substitute for the bytes it is bound to. Invalid statements are ignored, logged and counted at ingestion (5.6).
+
+### 6.2.1 Order of checks in `authorize` (Revision A, verified against the code)
+
+| step | check | failure | Spec §13 |
+|---|---|---|---|
+| 0 | `FAIL_OPEN_EXPERIMENTAL` requires an `experimental_arm` label | `ValueError` | (not in the Spec; benchmark guard) |
+| 1 | lineage authentication (`verify_lineage`) | typed `LineageVerificationError` | `invalid lineage` |
+| 2 | root binding (URI and anchor equal the root's in every node) | `RevocationBindingMismatch` | `revocation binding mismatch` |
+| 3 | audience: requested resource is a member of the leaf's audience | `AudienceMismatch` | `audience mismatch` |
+| 4 | attenuation (DR-0001) | `AuthorityAmplification` | `authority amplification` |
+| 5 | status: key separation, ingestion or accepted state, freshness, policy verdict (5.1.7, 5.4, 5.6) | `StatusFailure` subclasses; `RevocationBindingMismatch` for a URI or anchor mismatch; `NodeRevoked` follows from step 6 | status, rollback, stale handling |
+| 6 | revocation of any node in the authenticated lineage (`effective_at <= now`) | `NodeRevoked` | `revoked lineage` |
+| 7 | leaf expiry (`now >= expires_at`) | `CredentialExpired` | (not in the Spec) |
+| 8 | session reauthorization interval | `ReauthRequired` | (Spec §14) |
+
+**Error precedence.** The first failing step wins, so a request with several defects reports the earliest: an audience mismatch is reported before attenuation and before every status failure, and it touches no revocation-state machinery (no ingestion, no high-water-mark write, no alert, no policy verdict). Steps 1 to 4 reproduce the Spec §13 order. Before Revision A the audience check ran after status; `docs/decisions/DR-0003.md` section 5 records the change and `tests/test_revision_a.py` (`test_audience_mismatch_*`) pins it.
+
+**Expiry placement is a deferred discrepancy, not a defect of Revision A.** Leaf expiry (step 7) currently runs **after** status. DR-1 5.3.2 requires every node's expiry to be evaluated after lineage authentication and **before** status processing; that move, with per-node expiry, is **Revision C** (`docs/design-revision-1-implementation-plan.md`, Phase 4). Until C lands, a request with an expired leaf can still ingest an artifact and advance the high-water mark before it is denied. Revision A does not change this.
 
 ### 6.3 Other
 
@@ -469,6 +542,24 @@ These are not existing coverage and not part of the 61 passing tests. None colli
 ### 7.3 Protocol tests versus harness-only tests
 
 Protocol tests (import `lineage_revocation`): the five files above. Harness and evidence tests (do not exercise the protocol): `tests/test_measurement.py`, `tests/test_smolagents_adapter.py`, `tests/test_smolagents_toolcalling_adapter.py`, `tests/test_search_safety.py`, `tests/test_count_traces.py`. The Spec §18 matrix uses protocol tests only.
+
+### 7.4 Revision A conformance status (after implementation, 2026-11-15)
+
+Only the rows that Revision A changes are re-evaluated; the other rows of 7.1 stand as written. Evidence is the named test in `tests/` (read, and mutation-checked where noted in the implementation report). "EXISTING" keeps the meaning of 7.1: the asserted behavior matches the requirement for the aspect named.
+
+| # | 7.1 status | now | evidence |
+|---|---|---|---|
+| 2 | EXISTING | EXISTING; fixtures use a real Option K anchor | `test_revocation_trust_anchor_divergence_also_denied`; `test_option_k_*` |
+| 7 | PARTIAL | **EXISTING** | `test_semantically_invalid_statement_is_ignored_and_the_artifact_stays_usable[REVOKER_UNAUTHORIZED]`; `test_malformed_subject_key_in_a_statement_lineage_is_a_semantic_failure_not_a_crash`; `test_correct_length_invalid_signature_stays_a_per_statement_semantic_failure`; `test_invalid_statement_alone_never_denies`; structured alert and counter asserted (`test_invalid_statement_alert_is_structured_counted_monotonic_and_not_a_denial`) |
+| 8 | PARTIAL | **EXISTING** | `test_valid_and_invalid_statements_in_artifact` (artifact level, signed, through `authorize`); the invalid fixture is asserted well-formed on the wire, so it is a semantic failure only; five semantic reasons parametrized; wrong-length, missing and wrongly typed signatures are artifact-integrity, not row-8 invalid statements (`test_wrong_length_signature_rejects_the_entire_artifact`) |
+| 9 | EXISTING | EXISTING with signed artifacts | `test_status_artifact_rollback_denied`; `test_status_artifact_rollback_persists_across_restart`; `test_forged_artifacts_leave_store_byte_identical_and_genuine_still_accepted` |
+| 10 | PARTIAL | **EXISTING** | `test_stale_status_artifact_denied`; `test_artifact_valid_until_boundary`; `test_max_staleness_boundary`; fail-closed default and bounded-staleness alternative (`test_none_fails_closed_by_default`; `test_bounded_staleness_applies_to_s6_and_s2_over_last_authenticated_artifact`); artifact-integrity verdict under each policy (`test_fail_closed_denies_on_integrity_failure`; `test_bounded_staleness_uses_only_a_fresh_last_authenticated_artifact_and_its_revocations_apply`; `test_fail_open_may_allow_when_no_usable_authenticated_state_exists`) |
+| 11 | MISSING | **MISSING (not covered)** | 11b exists: `test_s3_missing_file_is_first_run_and_unreadable_store_fails_closed_for_every_policy`. 11a (network outage) has no fetch path; S2 is exercised only through the policy function (`test_s2_network_unavailable_has_its_own_reason_via_policy_function`). Closing 11b does not close row 11 |
+| 21 | PARTIAL | **EXISTING** | `test_accepted_state_reused_across_calls_reevaluates_freshness_and_effective_time` (`effective_at` one before, and equal to, `now`) |
+
+The artifact-integrity invariants (no high-water-mark advance, no replacement of the accepted artifact, no statements supplied, nothing persisted, under every policy including fail-open) are not rows of the 21-row Spec §18 list; they are covered by `test_integrity_rejected_artifact_*` and `test_no_persistent_state_is_written_on_any_integrity_failure_under_any_policy`.
+
+Row 19 (audience mismatch) is unchanged in status (EXISTING for the leaf only); its ordering relative to status now follows Spec §13 (`test_audience_mismatch_does_not_advance_or_create_the_high_water_mark`, `test_audience_mismatch_is_reported_before_any_status_failure_and_touches_no_telemetry`, `test_audience_mismatch_precedes_attenuation_as_in_spec_section_13`). Rows 3, 4, 6, 12, 13, 14 remain as in 7.1. Rows 19 and 20 depend on F, C and audience attenuation, not on A.
 
 ## 8. Controlled benchmark methodology amendments (Revision E)
 
@@ -558,7 +649,7 @@ ruling relayed: commit metadata, raw results and summaries; use Git LFS if raw a
 - **High-water store.** Existing files are `{uri: int}`. Any new reader must still load them (PROPOSED). Handling of a digest-less entry that meets an equal version is an open sub-question (5.2.4).
 - **Exceptions.** Keep the existing raised types so `pytest.raises` sites keep working; new failures SHOULD subclass the closest existing type.
 - **`authorize` signature.** Proposed changes are additive (P-2) or internal (P-1); positional order is unchanged.
-- **Intentional visible behavior changes:** equal-version artifacts accepted; unsigned artifacts rejected; any expired node rejected; failure order changes (expiry before status), so an input failing with `StaleStatusArtifact` and also having an expired leaf will raise `CredentialExpired`.
+- **Intentional visible behavior changes:** equal-version artifacts accepted; unsigned artifacts rejected; any expired node rejected; failure order changes (expiry before status), so an input failing with `StaleStatusArtifact` and also having an expired leaf will raise `CredentialExpired`. Revision A also restores the Spec §13 order for audience: `authorize` checks the audience after root binding and before attenuation and status (`docs/decisions/DR-0003.md` section 5), so an audience mismatch is reported before any status failure and leaves the high-water mark untouched.
 - **`status._demo()`** asserts the old behavior and is migrated together with Revision B (ruling 22).
 - **Wire compatibility.** No wire format for statements or artifacts exists, so nothing deployed needs compatibility. Node wire bytes are unchanged unless 5.1.4 option (i) is chosen.
 - **Evidence.** No measurement trace depends on the protocol code; `artifacts/` and `experiments/` need no migration.
@@ -575,6 +666,13 @@ Still open (implementation questions, **not** approved decisions; rulings 7, 10,
 6. The decoy forest shape, and the handling of depth-1 targets in the 50/50 signer mix (8.1).
 7. Renewal and revocation (8.4): a re-issued node has a new id, so a statement naming the old id does not match.
 8. Provenance: the Design approval letter is not in the repository; the Spec signature is not independently verified; the author of DR-0001's decision is unknown.
+
+**Known limitations of the Revision A implementation (recorded, not hidden; 2026-11-15).**
+
+- **`AcceptedStatus` is verifier-internal.** It is a plain frozen dataclass with no unforgeable proof of authentication. `authorize` trusts any instance it is handed, so one must only come from `ingest_status_artifact` inside the verifier process. The threat model assumes the attacker is on the distribution path, not inside the verifier (Spec §2, P5).
+- **The high-water-mark store is non-atomic and unlocked.** It is a JSON file written with `write_text` (no temporary file and rename, no fsync), and load, compare and save are not locked. Concurrent verifier processes sharing one store can race; a torn write leaves a corrupt file that fails closed (S3). Atomic, durable writes remain PROPOSED hardening under D9.
+- **The last authenticated artifact is caller-supplied.** Bounded staleness and fail-open fallback use `last_accepted_status`, which the library does not persist; after a restart bounded staleness degrades to fail-closed.
+- **No size or count limits** on the statements in an artifact.
 
 Risks: B before A would weaken the protocol (5.2.7), so the sequence forbids it; F changes every fixture node id and must be done first; P-2 and statement serialization add trusted code in a frozen module; at `K=1000` and depth 20 artifact size and ingestion cost are large (no number exists); a missing-file high-water store is indistinguishable from a first run (S3); fail-closed `None` handling (S1) means `test_valid_chain_authorizes` must be migrated in the implementation task; single machine, no real network, so absolute numbers will not transfer.
 
