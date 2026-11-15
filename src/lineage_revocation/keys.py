@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from .canonical import CanonicalEncodingError, decode_strict, encode_canonical
@@ -27,9 +28,14 @@ class COSEKey:
 
     @classmethod
     def from_cbor_dict(cls, d: dict) -> "COSEKey":
+        if not isinstance(d, Mapping):
+            raise ValueError(f"COSE_Key must be a map, not {type(d).__name__}")
         if d.get(COSE_KEY_KTY) != COSE_KTY_OKP or d.get(COSE_KEY_CRV) != COSE_CRV_ED25519:
             raise ValueError(f"unsupported COSE key type/curve: {d}")
-        return cls(x=d[COSE_KEY_X])
+        x = d[COSE_KEY_X]
+        if type(x) is not bytes:  # structure, detectable without a key: key material must be a byte string
+            raise ValueError(f"COSE_Key x must be a byte string, not {type(x).__name__}")
+        return cls(x=x)
 
     def to_anchor_bytes(self) -> bytes:
         """Option K (DR-1 5.1.5): canonical CBOR of the COSE_Key map."""

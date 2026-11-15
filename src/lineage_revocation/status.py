@@ -17,6 +17,7 @@ from .nodes import Node, _protected_header_bytes, sign_payload, verify_payload
 from .revocation import (
     RevocationStatement,
     StatementFormatError,
+    StatementReason,
     _find_parent,
     alert_invalid_statement,
     check_revocation_statement,
@@ -283,6 +284,24 @@ def ingest_status_artifact(
             forbidden[f"statement-signing key of {members[0].revoker.hex()[:16]}"] = signer
     check_key_separation(anchor_key, forbidden, uri)  # before any persistent mutation
 
+    # Semantic verification of every statement is pure, so it runs BEFORE anything is persisted: if it fails to
+    # complete for any reason, the high-water mark has not moved. Its alerts are held back and emitted only after
+    # the artifact is accepted, so a rejected artifact (for example a rollback) raises no statement alerts.
+    verified = []
+    deferred: list[tuple[bytes, list[RevocationStatement], list[tuple[RevocationStatement, StatementReason]]]] = []
+    for rid, members in ordered.items():
+        good = None
+        failures = []
+        for statement in members:  # different valid signatures over one body are one semantic revocation
+            reason = check_revocation_statement(statement, root_trust_anchor)
+            if reason is None:
+                good = good or statement
+            else:
+                failures.append((statement, reason))
+        deferred.append((rid, members, failures))
+        if good is not None:
+            verified.append(good)
+
     if store_path is None:
         raise StatusUnavailable(StatusReason.STORE_UNREADABLE, "no high-water mark store configured")
     highest = load_high_water_mark(store_path, uri)
@@ -290,20 +309,12 @@ def ingest_status_artifact(
         raise StatusRollback(StatusReason.VERSION_ROLLBACK, f"artifact version {body['version']} <= highest seen {highest}")
     save_high_water_mark(store_path, uri, body["version"])  # after authentication, before freshness
 
-    verified = []
-    for rid, members in ordered.items():
+    for rid, members, failures in deferred:  # the artifact is accepted: now report
         if received[rid] > 1:  # identical unsigned body: deduplicate deterministically and log
             _log.info("deduplicated %d revocation statements with id %s", received[rid], rid.hex(),
                       extra={"dedup_revocation_id": rid, "dedup_count": received[rid]})
-        good = None
-        for statement in members:  # different valid signatures over one body are one semantic revocation
-            reason = check_revocation_statement(statement, root_trust_anchor)
-            if reason is None:
-                good = good or statement
-            else:  # per-statement semantic failure (Spec section 11): ignore, log, alert, continue
-                alert_invalid_statement(statement, reason)
-        if good is not None:
-            verified.append(good)
+        for statement, reason in failures:  # per-statement semantic failure (Spec section 11): ignore, log, alert
+            alert_invalid_statement(statement, reason)
     return AcceptedStatus(
         version=body["version"], root_revocation_state_uri=uri, issued_at=body["issued_at"],
         valid_until=body["valid_until"], statements=tuple(verified),

@@ -79,10 +79,15 @@ class NodeBody:
     def from_cbor_dict(cls, d: dict) -> "NodeBody":
         if "delegation_rights" not in d:
             raise NodeFormatError("node body has no delegation_rights field")
+        raw_subject = d["subject"]
+        try:
+            subject = COSEKey.from_cbor_dict(raw_subject)
+        except (ValueError, TypeError, AttributeError) as exc:  # a hostile subject must be a typed parse failure
+            raise NodeFormatError(f"malformed subject key: {exc}") from exc
         return cls(
             version=d["version"],
             issuer=d["issuer"],
-            subject=COSEKey.from_cbor_dict(d["subject"]),
+            subject=subject,
             parent_node_id=d["parent_node_id"],
             audience=d["audience"],
             authority=frozenset(d["authority"]),
@@ -168,7 +173,7 @@ def verify_payload(payload: bytes, signature: bytes, verifier_public_key: COSEKe
             signature, _sig_structure(_protected_header_bytes(), payload, external_aad)
         )
         return True
-    except (InvalidSignature, ValueError):  # ValueError: unusable key material, e.g. not 32 bytes
+    except (InvalidSignature, ValueError, TypeError):  # unusable key material (wrong length or type) fails verification
         return False
 
 
