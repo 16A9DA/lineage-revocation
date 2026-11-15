@@ -6,7 +6,7 @@ import pytest
 from lineage_revocation.keys import generate_keypair
 from lineage_revocation.nodes import create_child_node, create_root_node
 from lineage_revocation.revocation import create_revocation_statement
-from lineage_revocation.status import StaleStatusArtifact, StatusArtifact
+from lineage_revocation.status import StaleStatusArtifact, StatusPolicy, build_status_artifact
 from lineage_revocation.verifier import (
     AudienceMismatch,
     AuthorityAmplification,
@@ -19,7 +19,8 @@ from lineage_revocation.verifier import (
 
 REAL_URI = "https://status.example/v1"
 ATTACKER_URI = "https://attacker.example/status"
-TRUST_ANCHOR = b"\x01" * 32
+ART_PRIV, ART_PUB = generate_keypair()  # dedicated artifact-signing key, distinct from every node and statement key
+TRUST_ANCHOR = ART_PUB.to_anchor_bytes()  # Option K
 NOW = 1_700_050_000
 
 
@@ -62,7 +63,7 @@ def _chain(*, c_revocation_state_uri=REAL_URI, c_revocation_trust_anchor=TRUST_A
 
 def test_valid_chain_authorizes():
     ch = _chain()
-    result = authorize([ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="agent", now=NOW)
+    result = authorize([ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="agent", now=NOW, status_policy=StatusPolicy.TTL_ONLY_NO_STATUS)
     assert result[-1] == ch["c"].node_id
 
 
@@ -72,7 +73,7 @@ def test_compromised_intermediary_status_redirect_denied_and_never_contacted():
 
     with patch.object(socket, "create_connection") as mock_connect:
         with pytest.raises(RevocationBindingMismatch) as exc_info:
-            authorize(lineage, ch["root_pub"], audience="agent", now=NOW)
+            authorize(lineage, ch["root_pub"], audience="agent", now=NOW, status_policy=StatusPolicy.TTL_ONLY_NO_STATUS)
         mock_connect.assert_not_called()
 
     assert exc_info.value.node_id == ch["c"].node_id
@@ -81,19 +82,19 @@ def test_compromised_intermediary_status_redirect_denied_and_never_contacted():
 def test_revocation_trust_anchor_divergence_also_denied():
     ch = _chain(c_revocation_trust_anchor=b"\xff" * 32)
     with pytest.raises(RevocationBindingMismatch):
-        authorize([ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="agent", now=NOW)
+        authorize([ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="agent", now=NOW, status_policy=StatusPolicy.TTL_ONLY_NO_STATUS)
 
 
 def test_audience_mismatch_denied():
     ch = _chain()
     with pytest.raises(AudienceMismatch):
-        authorize([ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="other-agent", now=NOW)
+        authorize([ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="other-agent", now=NOW, status_policy=StatusPolicy.TTL_ONLY_NO_STATUS)
 
 
 def test_expired_leaf_denied():
     ch = _chain()
     with pytest.raises(CredentialExpired):
-        authorize([ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="agent", now=1_700_999_999)
+        authorize([ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="agent", now=1_700_999_999, status_policy=StatusPolicy.TTL_ONLY_NO_STATUS)
 
 
 def test_stale_session_requires_reauth():
@@ -101,13 +102,19 @@ def test_stale_session_requires_reauth():
     with pytest.raises(ReauthRequired):
         authorize(
             [ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="agent", now=NOW,
-            last_authorized_at=NOW - 100, session_reauth_interval=50,
-        )
+            last_authorized_at=NOW - 100, session_reauth_interval=50, status_policy=StatusPolicy.TTL_ONLY_NO_STATUS)
+
+
+def StatusArtifact(*, version, root_revocation_state_uri, issued_at, valid_until, statements, key=ART_PRIV):
+    return build_status_artifact(
+        key, version=version, root_revocation_state_uri=root_revocation_state_uri,
+        issued_at=issued_at, valid_until=valid_until, statements=statements,
+    )
 
 
 def _revocation_statement(ch, *, effective_at=NOW - 1):
     return create_revocation_statement(
-        ch["root_priv"], revocation_id=b"\x01" * 4, target_node=ch["b"],
+        ch["root_priv"], target_node=ch["b"],
         target_lineage=[ch["root"], ch["a"], ch["b"]], revoker_node_id=ch["root"].node_id,
         revoker_scope_proof=b"", effective_at=effective_at, issued_at=1_700_000_000, reason_code="compromise",
     )
@@ -192,8 +199,7 @@ def test_fresh_session_does_not_require_reauth():
     ch = _chain()
     result = authorize(
         [ch["root"], ch["a"], ch["b"], ch["c"]], ch["root_pub"], audience="agent", now=NOW,
-        last_authorized_at=NOW - 10, session_reauth_interval=50,
-    )
+        last_authorized_at=NOW - 10, session_reauth_interval=50, status_policy=StatusPolicy.TTL_ONLY_NO_STATUS)
     assert result[-1] == ch["c"].node_id
 
 
@@ -208,7 +214,7 @@ def test_malicious_intermediary_authority_amplification_denied():
         issued_at=1_700_000_000, expires_at=1_700_100_000,
     )
     with pytest.raises(AuthorityAmplification) as exc_info:
-        authorize([ch["root"], ch["a"], ch["b"], amplified], ch["root_pub"], audience="agent", now=NOW)
+        authorize([ch["root"], ch["a"], ch["b"], amplified], ch["root_pub"], audience="agent", now=NOW, status_policy=StatusPolicy.TTL_ONLY_NO_STATUS)
     assert exc_info.value.node_id == amplified.node_id
 
 
@@ -221,7 +227,7 @@ def test_valid_authority_attenuation_allowed():
         root_revocation_state_uri=REAL_URI, revocation_trust_anchor=TRUST_ANCHOR,
         issued_at=1_700_000_000, expires_at=1_700_100_000,
     )
-    result = authorize([ch["root"], ch["a"], ch["b"], narrowed], ch["root_pub"], audience="agent", now=NOW)
+    result = authorize([ch["root"], ch["a"], ch["b"], narrowed], ch["root_pub"], audience="agent", now=NOW, status_policy=StatusPolicy.TTL_ONLY_NO_STATUS)
     assert result[-1] == narrowed.node_id
 
 
@@ -243,4 +249,4 @@ def test_can_delegate_false_blocks_any_child():
         issued_at=1_700_000_000, expires_at=1_700_100_000,
     )
     with pytest.raises(AuthorityAmplification):
-        authorize([non_delegable_root, child], root_pub, audience="agent", now=NOW)
+        authorize([non_delegable_root, child], root_pub, audience="agent", now=NOW, status_policy=StatusPolicy.TTL_ONLY_NO_STATUS)

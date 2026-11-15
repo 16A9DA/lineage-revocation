@@ -114,9 +114,9 @@ def _decode_single_item(data: bytes, what: str):
     return value
 
 
-def _sig_structure(protected_bytes: bytes, payload_bytes: bytes) -> bytes:
-    # COSE_Sign1 Sig_structure, RFC 8152 sec4.4. external_aad always empty here.
-    return encode_canonical(["Signature1", protected_bytes, b"", payload_bytes])
+def _sig_structure(protected_bytes: bytes, payload_bytes: bytes, external_aad: bytes = b"") -> bytes:
+    # COSE_Sign1 Sig_structure, RFC 8152 sec4.4. Nodes and statements use the empty external_aad.
+    return encode_canonical(["Signature1", protected_bytes, external_aad, payload_bytes])
 
 
 def _protected_header_bytes() -> bytes:
@@ -158,17 +158,17 @@ class Node:
         return cls(body=body, node_id=compute_node_id(body), signature=signature)
 
 
-def sign_payload(payload: bytes, signer_private_key: Ed25519PrivateKey) -> bytes:
-    return signer_private_key.sign(_sig_structure(_protected_header_bytes(), payload))
+def sign_payload(payload: bytes, signer_private_key: Ed25519PrivateKey, external_aad: bytes = b"") -> bytes:
+    return signer_private_key.sign(_sig_structure(_protected_header_bytes(), payload, external_aad))
 
 
-def verify_payload(payload: bytes, signature: bytes, verifier_public_key: COSEKey) -> bool:
+def verify_payload(payload: bytes, signature: bytes, verifier_public_key: COSEKey, external_aad: bytes = b"") -> bool:
     try:
         verifier_public_key.to_cryptography_key().verify(
-            signature, _sig_structure(_protected_header_bytes(), payload)
+            signature, _sig_structure(_protected_header_bytes(), payload, external_aad)
         )
         return True
-    except InvalidSignature:
+    except (InvalidSignature, ValueError):  # ValueError: unusable key material, e.g. not 32 bytes
         return False
 
 

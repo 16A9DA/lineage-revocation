@@ -11,6 +11,11 @@ COSE_SIGN1_TAG = 18  # the only CBOR tag the protocol permits (RFC 9052 section 
 _COSE_SIGN1_LEN = 4
 _UINT64_MAX = 2**64 - 1
 
+# Containers (arrays, maps, the COSE tag) may nest at most this deep. Protocol objects nest about five levels,
+# so the limit is generous, and it bounds the encoder's recursion deterministically: attacker-controlled input
+# can neither exhaust the Python stack nor behave differently depending on the caller's stack depth.
+MAX_NESTING_DEPTH = 32
+
 
 class CanonicalEncodingError(ValueError):
     """A value is unsupported by, or not in the form produced by, the protocol encoder."""
@@ -29,7 +34,7 @@ def _head(major: int, arg: int) -> bytes:
     return bytes([(major << 5) | 27]) + arg.to_bytes(8, "big")
 
 
-def _encode(value: Any, *, is_key: bool = False) -> bytes:
+def _encode(value: Any, depth: int = 0, *, is_key: bool = False) -> bytes:
     # bool is checked first: it subclasses int but encodes as a simple value.
     if type(value) is bool:
         if is_key:
@@ -55,21 +60,24 @@ def _encode(value: Any, *, is_key: bool = False) -> bytes:
         raise CanonicalEncodingError(f"map keys must be integer, text or byte strings, not {type(value).__name__}")
     if value is None:
         return b"\xf6"
+    if type(value) in (list, tuple, dict) or isinstance(value, Mapping) or type(value) is CBORTag:
+        if depth >= MAX_NESTING_DEPTH:
+            raise CanonicalEncodingError(f"nesting exceeds the maximum depth of {MAX_NESTING_DEPTH}")
     if type(value) in (list, tuple):
-        return _head(4, len(value)) + b"".join(_encode(v) for v in value)
+        return _head(4, len(value)) + b"".join(_encode(v, depth + 1) for v in value)
     if isinstance(value, Mapping) and not isinstance(value, CBORTag):
-        pairs = sorted(((_encode(k, is_key=True), v) for k, v in value.items()), key=lambda p: p[0])
+        pairs = sorted(((_encode(k, depth + 1, is_key=True), v) for k, v in value.items()), key=lambda p: p[0])
         for (k1, _), (k2, _) in zip(pairs, pairs[1:]):
             if k1 == k2:
                 raise CanonicalEncodingError("duplicate map key")
-        return _head(5, len(pairs)) + b"".join(k + _encode(v) for k, v in pairs)
+        return _head(5, len(pairs)) + b"".join(k + _encode(v, depth + 1) for k, v in pairs)
     if type(value) is CBORTag:
         if value.tag != COSE_SIGN1_TAG:
             raise CanonicalEncodingError(f"CBOR tag {value.tag} is not permitted")
         inner = value.value
         if type(inner) not in (list, tuple) or len(inner) != _COSE_SIGN1_LEN:
             raise CanonicalEncodingError("tag 18 must wrap a four-element array")
-        return _head(6, COSE_SIGN1_TAG) + _encode(inner)
+        return _head(6, COSE_SIGN1_TAG) + _encode(inner, depth + 1)
     raise CanonicalEncodingError(f"unsupported type {type(value).__name__}")
 
 
@@ -82,8 +90,15 @@ def encode_canonical(value: Any) -> bytes:
     Key types int/text/bytes are accepted (COSE maps use integer labels); schema validators
     decide which key types a given protocol body permits.
     Domain restriction is input validation; canonical correctness comes from the encoder.
+
+    Nesting is limited to MAX_NESTING_DEPTH. A RecursionError from an almost exhausted caller stack is
+    converted to CanonicalEncodingError, so attacker-controlled input can never surface as an untyped
+    exception (callers treat CanonicalEncodingError as a malformed object and fail closed).
     """
-    return _encode(value)
+    try:
+        return _encode(value)
+    except RecursionError as exc:
+        raise CanonicalEncodingError("value is nested too deeply to encode with the remaining stack") from exc
 
 
 def decode_canonical(data: bytes) -> Any:

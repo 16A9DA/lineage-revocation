@@ -388,3 +388,121 @@ _homogeneous = st.recursive(
 @given(_homogeneous)
 def test_orderings_coincide_over_text_keyed_and_small_label_maps(value):
     assert encode_canonical(value) == cbor2.dumps(value, canonical=True)
+
+
+# ---------------------------------------------------------------- B3: nesting limit, no RecursionError leak
+
+import sys
+import traceback
+
+from lineage_revocation import canonical
+
+
+def _nest_list(depth: int):
+    value = 0
+    for _ in range(depth):
+        value = [value]
+    return value
+
+
+def _nest_wire(depth: int) -> bytes:
+    return b"\x81" * depth + b"\x00"  # `depth` nested definite-length arrays around 0
+
+
+def _at_stack(extra_frames: int, fn):
+    """Run fn() after `extra_frames` more Python frames. Returns (reached, outcome); outcome is the exception
+    fn raised, or None. `reached` is False when the helper itself overflowed before fn started."""
+    state = {"reached": False}
+
+    def target():
+        state["reached"] = True
+        try:
+            return None, fn()
+        except BaseException as exc:  # noqa: BLE001 - the point is to see exactly what escapes
+            return exc, None
+
+    def descend(n):
+        return target() if n == 0 else descend(n - 1)
+
+    try:
+        exc, _ = descend(extra_frames)
+    except RecursionError as helper_overflow:
+        return state["reached"], (None if not state["reached"] else helper_overflow)
+    return state["reached"], exc
+
+
+def test_max_nesting_depth_is_a_documented_small_constant():
+    assert isinstance(canonical.MAX_NESTING_DEPTH, int)
+    assert 8 <= canonical.MAX_NESTING_DEPTH <= 128  # far above any protocol object, far below the stack
+
+
+def test_nesting_boundary_encoder_accepts_the_limit_and_rejects_one_more():
+    limit = canonical.MAX_NESTING_DEPTH
+    assert encode_canonical(_nest_list(limit)) == _nest_wire(limit)
+    with pytest.raises(CanonicalEncodingError):
+        encode_canonical(_nest_list(limit + 1))
+
+
+def test_nesting_boundary_decode_strict_accepts_the_limit_and_rejects_one_more():
+    limit = canonical.MAX_NESTING_DEPTH
+    assert decode_strict(_nest_wire(limit)) == _nest_list(limit)
+    with pytest.raises(CanonicalEncodingError):
+        decode_strict(_nest_wire(limit + 1))
+
+
+def test_nesting_limit_counts_maps_and_the_cose_tag_as_levels():
+    limit = canonical.MAX_NESTING_DEPTH
+    maps = {}
+    for _ in range(limit - 1):
+        maps = {"k": maps}
+    assert encode_canonical(maps)  # `limit` nested maps
+    with pytest.raises(CanonicalEncodingError):
+        encode_canonical({"k": maps})
+    tagged = CBORTag(18, [b"", {}, b"", encode_canonical(0)])
+    assert encode_canonical(tagged)  # the tag and its array are two levels, well inside the limit
+    # tagged = tag (level k), its array (k+1), the empty unprotected-header map inside it (k+2).
+    inside = tagged
+    for _ in range(limit - 3):
+        inside = [inside]
+    assert encode_canonical(inside)  # k = limit-3: the innermost map sits on the last permitted level
+    with pytest.raises(CanonicalEncodingError):
+        encode_canonical([inside])  # k = limit-2: the map would be one level too deep, so the tag IS a level
+
+
+@pytest.mark.parametrize("depth", [399, 400, 401, 5000, 100000])
+@pytest.mark.parametrize("stack", [0, 100, 200, 300, 500, 700])
+def test_deeply_nested_input_never_leaks_recursion_error_at_any_caller_stack(depth, stack):
+    reached, exc = _at_stack(stack, lambda: decode_strict(_nest_wire(depth)))
+    if not reached:
+        pytest.skip("helper stack overflowed before the call; covered by the other stack offsets")
+    assert isinstance(exc, CanonicalEncodingError), f"leaked {type(exc).__name__}"
+
+
+def test_the_outcome_for_a_deep_input_does_not_depend_on_the_caller_stack():
+    outcomes = set()
+    for stack in (0, 50, 150, 300, 600):
+        reached, exc = _at_stack(stack, lambda: decode_strict(_nest_wire(399)))
+        if reached:
+            outcomes.add((type(exc).__name__, str(exc)))
+    assert len(outcomes) == 1 and next(iter(outcomes))[0] == "CanonicalEncodingError"
+
+
+def test_recursion_error_near_the_stack_limit_is_converted_not_leaked():
+    # Defense in depth: even a within-limit value can meet an almost exhausted stack. It must come back as a
+    # typed error (fail closed), never as RecursionError.
+    value = _nest_list(canonical.MAX_NESTING_DEPTH)
+    limit = sys.getrecursionlimit()
+    converted = 0
+    for stack in range(limit - 260, limit):
+        reached, exc = _at_stack(stack, lambda: encode_canonical(value))
+        if not reached:
+            continue
+        if isinstance(exc, RecursionError):
+            # A RecursionError that never entered canonical.py is the caller's own frame overflowing at the
+            # call boundary (no code of ours can run there). Only one that came out of the encoder is a leak.
+            frames = [t.filename for t in traceback.extract_tb(exc.__traceback__)]
+            assert not any(f.endswith("canonical.py") for f in frames), f"encoder leaked RecursionError at +{stack}"
+            continue
+        assert exc is None or isinstance(exc, CanonicalEncodingError), f"leaked {type(exc).__name__} at +{stack}"
+        converted += isinstance(exc, CanonicalEncodingError)
+    assert converted > 0, "the near-limit region was never exercised"

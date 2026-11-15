@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .canonical import CanonicalEncodingError, decode_strict, encode_canonical
+
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey,
     Ed25519PublicKey,
@@ -27,6 +29,28 @@ class COSEKey:
     def from_cbor_dict(cls, d: dict) -> "COSEKey":
         if d.get(COSE_KEY_KTY) != COSE_KTY_OKP or d.get(COSE_KEY_CRV) != COSE_CRV_ED25519:
             raise ValueError(f"unsupported COSE key type/curve: {d}")
+        return cls(x=d[COSE_KEY_X])
+
+    def to_anchor_bytes(self) -> bytes:
+        """Option K (DR-1 5.1.5): canonical CBOR of the COSE_Key map."""
+        return encode_canonical(self.to_cbor_dict())
+
+    @classmethod
+    def from_anchor_bytes(cls, data: bytes) -> "COSEKey":
+        """Strict inverse of to_anchor_bytes: exact key set, OKP/Ed25519, 32-byte x, canonical form."""
+        try:
+            d = decode_strict(data)
+        except CanonicalEncodingError as exc:
+            raise ValueError(f"trust anchor is not a canonical COSE_Key: {exc}") from exc
+        if (
+            not isinstance(d, dict)
+            or set(d) != {COSE_KEY_KTY, COSE_KEY_CRV, COSE_KEY_X}
+            or d[COSE_KEY_KTY] != COSE_KTY_OKP
+            or d[COSE_KEY_CRV] != COSE_CRV_ED25519
+            or type(d[COSE_KEY_X]) is not bytes
+            or len(d[COSE_KEY_X]) != 32
+        ):
+            raise ValueError("trust anchor is not an OKP/Ed25519 COSE_Key with exactly kty, crv and x")
         return cls(x=d[COSE_KEY_X])
 
     def to_cryptography_key(self) -> Ed25519PublicKey:

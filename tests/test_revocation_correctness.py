@@ -2,7 +2,7 @@ from dataclasses import replace
 
 from lineage_revocation.keys import generate_keypair
 from lineage_revocation.nodes import create_child_node, create_root_node
-from lineage_revocation.revocation import create_revocation_statement, is_target_revoked
+from lineage_revocation.revocation import RevocationStatement, create_revocation_statement, is_target_revoked
 
 REVOCATION_URI = "https://status.example/v1"
 TRUST_ANCHOR = b"\x01" * 32
@@ -52,10 +52,9 @@ def _delegation_chain():
     )
 
 
-def _statement(*, signing_key, target_node, target_lineage, revoker_node_id, effective_at=NOW - 1, revocation_id=b"\x01" * 4):
+def _statement(*, signing_key, target_node, target_lineage, revoker_node_id, effective_at=NOW - 1):
     return create_revocation_statement(
         signing_key,
-        revocation_id=revocation_id,
         target_node=target_node,
         target_lineage=target_lineage,
         revoker_node_id=revoker_node_id,
@@ -121,6 +120,8 @@ def test_invalid_statement_ignored_but_valid_one_still_revokes():
         signing_key=ch["root_priv"], target_node=ch["a"], target_lineage=[ch["root"], ch["a"]],
         revoker_node_id=ch["root"].node_id,
     )
+    wire = invalid.to_cose_sign1_bytes()  # the invalid statement is well-formed on the wire: semantic failure only
+    assert RevocationStatement.from_cose_sign1_bytes(wire).to_cose_sign1_bytes() == wire
     assert is_target_revoked(ch["a"].node_id, [invalid, valid], ch["root_pub"], now=NOW)
 
 

@@ -20,6 +20,7 @@ from lineage_revocation.nodes import (
     verify_node_signature,
 )
 from lineage_revocation.revocation import create_revocation_statement, is_target_revoked
+from lineage_revocation.status import StatusPolicy
 from lineage_revocation.verifier import AudienceMismatch, authorize
 
 URI = "https://status.example/v1"
@@ -217,25 +218,25 @@ def test_string_audience_on_the_wire_rejected():
 
 def test_leaf_authorizes_when_resource_is_member():
     _priv, root_pub, root, leaf = _chain(leaf_audience=("other", "agent"))
-    assert authorize([root, leaf], root_pub, audience="agent", now=NOW)[-1] == leaf.node_id
+    assert authorize([root, leaf], root_pub, audience="agent", now=NOW, status_policy=StatusPolicy.TTL_ONLY_NO_STATUS)[-1] == leaf.node_id
 
 
 def test_leaf_denied_when_resource_is_not_member():
     _priv, root_pub, root, leaf = _chain(leaf_audience=("other", "more"))
     with pytest.raises(AudienceMismatch):
-        authorize([root, leaf], root_pub, audience="agent", now=NOW)
+        authorize([root, leaf], root_pub, audience="agent", now=NOW, status_policy=StatusPolicy.TTL_ONLY_NO_STATUS)
 
 
 def test_empty_leaf_audience_denies_every_resource():
     _priv, root_pub, root, leaf = _chain(leaf_audience=())
     with pytest.raises(AudienceMismatch):
-        authorize([root, leaf], root_pub, audience="agent", now=NOW)
+        authorize([root, leaf], root_pub, audience="agent", now=NOW, status_policy=StatusPolicy.TTL_ONLY_NO_STATUS)
 
 
 def test_membership_is_exact_not_substring():
     _priv, root_pub, root, leaf = _chain(leaf_audience=("agent-x",))
     with pytest.raises(AudienceMismatch):
-        authorize([root, leaf], root_pub, audience="agent", now=NOW)
+        authorize([root, leaf], root_pub, audience="agent", now=NOW, status_policy=StatusPolicy.TTL_ONLY_NO_STATUS)
 
 
 # ---------------------------------------------------------------- D16: delegation_rights map
@@ -340,13 +341,13 @@ def test_node_id_changes_with_audience_and_with_delegation_rights():
 def test_parent_references_follow_recomputed_ids_through_the_chain():
     _priv, root_pub, root, leaf = _chain()
     assert leaf.body.parent_node_id == root.node_id == compute_node_id(root.body)
-    assert authorize([root, leaf], root_pub, audience="agent", now=NOW) == [root.node_id, leaf.node_id]
+    assert authorize([root, leaf], root_pub, audience="agent", now=NOW, status_policy=StatusPolicy.TTL_ONLY_NO_STATUS) == [root.node_id, leaf.node_id]
 
 
 def test_statement_embeds_tagged_node_envelopes_and_still_verifies():
     root_priv, root_pub, root, leaf = _chain()
     statement = create_revocation_statement(
-        root_priv, revocation_id=b"\x01" * 4, target_node=leaf, target_lineage=[root, leaf],
+        root_priv, target_node=leaf, target_lineage=[root, leaf],
         revoker_node_id=root.node_id, revoker_scope_proof=b"", effective_at=NOW - 1,
         issued_at=1_700_000_000, reason_code="compromise",
     )
@@ -362,7 +363,7 @@ def test_statement_embeds_tagged_node_envelopes_and_still_verifies():
 def test_statement_signature_depends_on_the_tagged_node_bytes():
     root_priv, root_pub, root, leaf = _chain()
     statement = create_revocation_statement(
-        root_priv, revocation_id=b"\x01" * 4, target_node=leaf, target_lineage=[root, leaf],
+        root_priv, target_node=leaf, target_lineage=[root, leaf],
         revoker_node_id=root.node_id, revoker_scope_proof=b"", effective_at=NOW - 1,
         issued_at=1_700_000_000, reason_code="compromise",
     )
