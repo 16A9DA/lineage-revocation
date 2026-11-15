@@ -40,6 +40,12 @@ def _body(pub, **overrides) -> NodeBody:
     return NodeBody(**fields)
 
 
+def _raw(value) -> bytes:
+    # Crafts deliberately malformed wire input (wrong or nested tags, odd shapes). The protocol
+    # encoder (D20) refuses to produce these, so the negative tests use cbor2 directly.
+    return cbor2.dumps(value, canonical=True)
+
+
 def _wire_parts(node: Node):
     tagged = cbor2.loads(node.to_cose_sign1_bytes())
     return list(tagged.value)
@@ -47,7 +53,7 @@ def _wire_parts(node: Node):
 
 def _wire_for(parts, tag=18):
     value = list(parts)
-    return encode_canonical(CBORTag(tag, value) if tag is not None else value)
+    return _raw(CBORTag(tag, value) if tag is not None else value)
 
 
 def _body_dict(pub, **overrides) -> dict:
@@ -113,7 +119,7 @@ def test_wrong_tag_rejected(tag):
 def test_nested_tag_rejected():
     priv, pub = generate_keypair()
     node = sign_node(_body(pub), priv)
-    nested = encode_canonical(CBORTag(18, CBORTag(18, _wire_parts(node))))
+    nested = _raw(CBORTag(18, CBORTag(18, _wire_parts(node))))
     with pytest.raises(NodeFormatError):
         Node.from_cose_sign1_bytes(nested)
 
@@ -122,7 +128,7 @@ def test_tag_inside_array_element_rejected():
     priv, pub = generate_keypair()
     node = sign_node(_body(pub), priv)
     protected, unprotected, payload, signature = _wire_parts(node)
-    wire = encode_canonical(CBORTag(18, [protected, unprotected, CBORTag(24, payload), signature]))
+    wire = _raw(CBORTag(18, [protected, unprotected, CBORTag(24, payload), signature]))
     with pytest.raises(NodeFormatError):
         Node.from_cose_sign1_bytes(wire)
 
@@ -145,7 +151,7 @@ def test_malformed_envelope_shape_rejected(mutate):
 @pytest.mark.parametrize("value", [1, "text", b"bytes", {"a": 1}, None])
 def test_tag_over_non_array_rejected(value):
     with pytest.raises(NodeFormatError):
-        Node.from_cose_sign1_bytes(encode_canonical(CBORTag(18, value)))
+        Node.from_cose_sign1_bytes(_raw(CBORTag(18, value)))
 
 
 @pytest.mark.parametrize("data", [b"", b"\xff", b"\xd2", b"\xd2\x84"])
