@@ -31,26 +31,26 @@ def _chain(*, c_revocation_state_uri=REAL_URI, c_revocation_trust_anchor=TRUST_A
 
     root = create_root_node(
         root_priv, root_pub,
-        issuer="root", audience="agent", authority=frozenset({"full"}), can_delegate=True,
+        issuer="root", audience=["agent"], authority=frozenset({"full"}), delegation_rights={"can_delegate": True},
         root_revocation_state_uri=REAL_URI, revocation_trust_anchor=TRUST_ANCHOR,
         issued_at=1_700_000_000, expires_at=1_700_100_000,
     )
     a = create_child_node(
         root_priv, a_pub, root.node_id,
-        issuer="root", audience="agent", authority=frozenset({"full"}), can_delegate=True,
+        issuer="root", audience=["agent"], authority=frozenset({"full"}), delegation_rights={"can_delegate": True},
         root_revocation_state_uri=REAL_URI, revocation_trust_anchor=TRUST_ANCHOR,
         issued_at=1_700_000_000, expires_at=1_700_100_000,
     )
     b = create_child_node(
         a_priv, b_pub, a.node_id,
-        issuer="a", audience="agent", authority=frozenset({"full"}), can_delegate=True,
+        issuer="a", audience=["agent"], authority=frozenset({"full"}), delegation_rights={"can_delegate": True},
         root_revocation_state_uri=REAL_URI, revocation_trust_anchor=TRUST_ANCHOR,
         issued_at=1_700_000_000, expires_at=1_700_100_000,
     )
     # b is compromised: it issues c with a diverging revocation binding.
     c = create_child_node(
         b_priv, c_pub, b.node_id,
-        issuer="b", audience="agent", authority=frozenset({"full"}), can_delegate=True,
+        issuer="b", audience=["agent"], authority=frozenset({"full"}), delegation_rights={"can_delegate": True},
         root_revocation_state_uri=c_revocation_state_uri, revocation_trust_anchor=c_revocation_trust_anchor,
         issued_at=1_700_000_000, expires_at=1_700_100_000,
     )
@@ -203,7 +203,7 @@ def test_malicious_intermediary_authority_amplification_denied():
     _mallory_priv, mallory_pub = generate_keypair()
     amplified = create_child_node(
         ch["b_priv"], mallory_pub, ch["b"].node_id,
-        issuer="b", audience="agent", authority=frozenset({"full", "admin"}), can_delegate=True,
+        issuer="b", audience=["agent"], authority=frozenset({"full", "admin"}), delegation_rights={"can_delegate": True},
         root_revocation_state_uri=REAL_URI, revocation_trust_anchor=TRUST_ANCHOR,
         issued_at=1_700_000_000, expires_at=1_700_100_000,
     )
@@ -217,7 +217,7 @@ def test_valid_authority_attenuation_allowed():
     _priv, pub = generate_keypair()
     narrowed = create_child_node(
         ch["b_priv"], pub, ch["b"].node_id,
-        issuer="b", audience="agent", authority=frozenset(), can_delegate=True,  # strict subset of parent's {"full"}
+        issuer="b", audience=["agent"], authority=frozenset(), delegation_rights={"can_delegate": True},  # strict subset of parent's {"full"}
         root_revocation_state_uri=REAL_URI, revocation_trust_anchor=TRUST_ANCHOR,
         issued_at=1_700_000_000, expires_at=1_700_100_000,
     )
@@ -232,13 +232,13 @@ def test_can_delegate_false_blocks_any_child():
     _b_priv, b_pub = generate_keypair()
     non_delegable_root = create_root_node(
         root_priv, root_pub,
-        issuer="root", audience="agent", authority=frozenset({"full"}), can_delegate=False,
+        issuer="root", audience=["agent"], authority=frozenset({"full"}), delegation_rights={"can_delegate": False},
         root_revocation_state_uri=REAL_URI, revocation_trust_anchor=TRUST_ANCHOR,
         issued_at=1_700_000_000, expires_at=1_700_100_000,
     )
     child = create_child_node(
         root_priv, a_pub, non_delegable_root.node_id,
-        issuer="root", audience="agent", authority=frozenset({"full"}), can_delegate=True,
+        issuer="root", audience=["agent"], authority=frozenset({"full"}), delegation_rights={"can_delegate": True},
         root_revocation_state_uri=REAL_URI, revocation_trust_anchor=TRUST_ANCHOR,
         issued_at=1_700_000_000, expires_at=1_700_100_000,
     )

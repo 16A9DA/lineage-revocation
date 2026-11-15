@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 
 from .lineage import verify_lineage
@@ -14,8 +15,8 @@ class AuthorizationError(Exception):
 
 
 class AudienceMismatch(AuthorizationError):
-    def __init__(self, actual: str, expected: str):
-        super().__init__(f"leaf audience {actual!r} != expected {expected!r}")
+    def __init__(self, actual: Sequence[str], expected: str):
+        super().__init__(f"requested resource {expected!r} is not in leaf audience {list(actual)!r}")
         self.actual = actual
         self.expected = expected
 
@@ -104,7 +105,7 @@ def authorize(
                 raise NodeRevoked(node_id)
 
     leaf = lineage[-1]
-    if leaf.body.audience != audience:
+    if audience not in leaf.body.audience:
         raise AudienceMismatch(leaf.body.audience, audience)
     if now >= leaf.body.expires_at:
         raise CredentialExpired(leaf.body.expires_at, now)

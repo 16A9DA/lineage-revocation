@@ -12,9 +12,9 @@ def _body(pub, **overrides) -> NodeBody:
         issuer="root",
         subject=pub,
         parent_node_id=None,
-        audience="agent-x",
+        audience=["agent-x"],
         authority=frozenset({"a"}),
-        can_delegate=True,
+        delegation_rights={"can_delegate": True},
         root_revocation_state_uri="https://status.example/v1",
         revocation_trust_anchor=b"\x01" * 32,
         issued_at=1_700_000_000,
@@ -33,7 +33,7 @@ def test_sign_and_verify_roundtrip():
 def test_tampered_body_fails_verification():
     priv, pub = generate_keypair()
     node = sign_node(_body(pub), priv)
-    tampered = replace(node, body=replace(node.body, audience="agent-y"))
+    tampered = replace(node, body=replace(node.body, audience=["agent-y"]))
     assert not verify_node_signature(tampered, pub)
 
 
@@ -57,7 +57,7 @@ def test_resigning_same_body_keeps_node_id_and_signature():
 def test_changing_field_changes_node_id():
     priv, pub = generate_keypair()
     node1 = sign_node(_body(pub), priv)
-    node2 = sign_node(_body(pub, audience="agent-y"), priv)
+    node2 = sign_node(_body(pub, audience=["agent-y"]), priv)
     assert node1.node_id != node2.node_id
 
 
