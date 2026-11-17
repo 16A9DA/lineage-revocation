@@ -2,6 +2,7 @@
 policy, alerts, D17 content-derived revocation ids. Revisions B (equal version), C (per-node expiry)
 and audience attenuation are deliberately not covered."""
 import hashlib
+import json
 import logging
 from dataclasses import replace
 from types import SimpleNamespace
@@ -109,6 +110,13 @@ def auth(w, status, store, **kw):
 
 def ingest(w, wire, store):
     return ingest_status_artifact(wire, root=w.root, root_trust_anchor=w.root_pub, store_path=store)
+
+
+
+def stored_version(store, uri=URI):
+    """Version recorded for `uri`, whichever store format (legacy integer or {version, digest}) holds it."""
+    raw = json.loads(store.read_text())[uri]
+    return raw if isinstance(raw, int) else raw["version"]
 
 
 ARM = "benchmark-arm-failopen-x"
@@ -430,7 +438,7 @@ def test_stale_authenticated_higher_version_persists_but_is_not_used(w, tmp_path
         auth(w, stale, store)
     assert exc.value.reason is StatusReason.ARTIFACT_STALE
     assert not isinstance(exc.value, StatusRollback)
-    assert '"%s": 7' % URI in store.read_text()  # persisted after authentication, before freshness
+    assert stored_version(store) == 7  # persisted after authentication, before freshness
     with pytest.raises(StatusRollback):
         auth(w, artifact(w, version=6), store)
 
@@ -488,9 +496,13 @@ def test_accepted_state_not_reusable_for_a_different_root_with_same_uri_and_anch
                   max_staleness=MAX_STALENESS)
 
 
-def test_equal_version_is_still_rejected_revision_b_not_implemented(w, tmp_path):
+def test_equal_version_of_the_same_artifact_is_accepted_since_revision_b(w, tmp_path):
+    # Revision A rejected an equal version as a rollback (this test used to pin that, by name). Revision B
+    # replaces it: the same authenticated, fresh artifact is accepted idempotently. A strictly lower version
+    # is still a rollback. Full coverage is in tests/test_revision_b.py.
     store = tmp_path / "hwm.json"
-    auth(w, artifact(w, version=1), store)
+    wire = artifact(w, version=2)
+    assert auth(w, wire, store) == auth(w, wire, store)
     with pytest.raises(StatusRollback):
         auth(w, artifact(w, version=1), store)
 
@@ -1117,7 +1129,7 @@ def test_semantically_invalid_statement_is_ignored_and_the_artifact_stays_usable
     with caplog.at_level(logging.WARNING, logger="lineage_revocation.alerts"):
         state = ingest(w, artifact(w, version=3, statements=[invalid, valid]), store)
     assert state.statements == (valid,)  # valid statement effective, invalid ignored
-    assert '"%s": 3' % URI in store.read_text()  # artifact accepted and persisted: it stays usable
+    assert stored_version(store) == 3  # artifact accepted and persisted: it stays usable
     assert alert_count("invalid_revocation_statement") == before_s + 1
     assert alert_count("artifact_integrity") == before_i  # NOT an artifact-integrity failure
     rec = [r for r in caplog.records if getattr(r, "alert_kind", "") == "invalid_revocation_statement"]
@@ -1560,7 +1572,7 @@ def test_malformed_subject_key_in_a_statement_lineage_is_a_semantic_failure_not_
     with caplog.at_level(logging.WARNING, logger="lineage_revocation.alerts"):
         state = ingest(w, artifact(w, version=5, statements=[risky, valid]), store)  # no ValueError
     assert state.statements == (valid,)  # the risky statement is ignored, the other still applies
-    assert '"%s": 5' % URI in store.read_text()  # the artifact was accepted normally: usable, and persisted once
+    assert stored_version(store) == 5  # the artifact was accepted normally: usable, and persisted once
     assert alert_count("invalid_revocation_statement") == before_s + 1
     assert alert_count("artifact_integrity") == before_i  # semantic, not integrity
     rec = _records(caplog, "invalid_revocation_statement")[0].alert_fields
@@ -1874,7 +1886,7 @@ def test_audience_mismatch_still_follows_lineage_and_binding_checks_first(w):
 def test_valid_audience_persists_the_mark_through_the_normal_path(w, tmp_path):
     store = tmp_path / "hwm.json"
     assert _authz(w, artifact(w, version=9), store, "agent")
-    assert '"%s": 9' % URI in store.read_text()
+    assert stored_version(store) == 9
 
 
 def test_valid_audience_still_applies_revocations_and_the_policy(w, tmp_path):
@@ -1955,7 +1967,7 @@ def test_missing_max_staleness_with_an_artifact_is_a_usage_error(w, tmp_path):
     assert not (tmp_path / "hwm.json").exists()
 
 
-def test_status_demo_is_an_explicit_pending_migration_stub():
+def test_status_demo_is_no_longer_a_pending_stub_since_revision_b(capsys):
     import lineage_revocation.status as st
-    with pytest.raises(NotImplementedError, match="Revision B"):
-        st._demo()
+    st._demo()  # migrated by Revision B (DR-1 ruling 22); its rules are checked in tests/test_revision_b.py
+    assert "self-check passed" in capsys.readouterr().out

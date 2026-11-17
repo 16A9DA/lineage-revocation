@@ -130,7 +130,8 @@ def _resolve_status(
             check_bound(state, root)
         else:
             state = ingest_status_artifact(
-                status_artifact, root=root, root_trust_anchor=root_trust_anchor, store_path=status_store_path
+                status_artifact, root=root, root_trust_anchor=root_trust_anchor, store_path=status_store_path,
+                now=now, max_staleness=max_staleness,
             )
         check_fresh(state, now, max_staleness)  # every authorization, never cached
         return state
